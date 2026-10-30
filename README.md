@@ -1,36 +1,85 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AgentShield · SOC Dashboard & PEP Gateway
 
-## Getting Started
+> **Zero-Trust Runtime Policy Enforcement & Cryptographic Merkle Audit for Autonomous AI Agents**
 
-First, run the development server:
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel%20Production-crimson?style=for-the-badge&logo=vercel)](https://agentshield-sooty.vercel.app)
+[![Next.js](https://img.shields.io/badge/Next.js-16%20App%20Router-black?style=for-the-badge&logo=next.js)](https://nextjs.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-Backend%20PEP-009688?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+---
+
+## 🚀 Live Demo
+
+- **Production Dashboard**: [https://agentshield-sooty.vercel.app](https://agentshield-sooty.vercel.app)
+
+---
+
+## 🛡️ Architecture Overview
+
+AgentShield provides real-time tool traffic interception, permission classification, human-in-the-loop (HITL) approval gates, and a SHA-256 Merkle audit chain for autonomous AI agents.
+
+### Strict 3-Color SOC Palette
+- **Charcoal Black** (`#171717`): Surfaces, command cards, and background mesh.
+- **Forest Green** (`#06110C`): Safe executions, verified Merkle connectors, and active policy indicators.
+- **Crimson Red** (`#A31C18`): High-severity threats, broken chain tamper alerts, and red-team exploit triggers.
+
+---
+
+## 📦 Project Structure
+
+```
+Hack4A/
+├── app/                           # Next.js App Router
+│   ├── api/                       # Edge Route Handlers
+│   │   ├── agent/run/             # Red-team attack dispatcher
+│   │   ├── approvals/[id]/action/ # HITL approval resolution
+│   │   └── audit/verify/          # Cryptographic Merkle verification
+│   ├── globals.css                # Tailwind v4 theme & automotive glow effects
+│   ├── layout.tsx                 # Root layout & Google Fonts
+│   └── page.tsx                   # Main SOC Dashboard view
+├── components/                    # Modular React components
+│   ├── AestheticHeroBanner.tsx    # "BUILT DIFFERENTLY" editorial hero
+│   ├── AttackPlayground.tsx       # Judges' 1-Click Attack Playground
+│   ├── CryptographicAuditVisualizer.tsx # SHA-256 Merkle Chain Visualizer
+│   ├── HITLApprovalModal.tsx      # Risk-aware Human-in-the-Loop approval gate
+│   ├── LiveTelemetryStream.tsx    # Real-time tool execution feed
+│   ├── ManualTestToolbar.tsx      # Quick sandbox trigger bar
+│   ├── RiskScoreBar.tsx           # Risk gauge component
+│   ├── SOCHeader.tsx              # Top telemetry status & live UTC clock
+│   ├── StatsPanel.tsx             # Blocked / Allowed / Pending metrics
+│   └── StatusBadge.tsx            # High-tech status pills
+├── hooks/                         # React state & streaming hooks
+│   ├── useAuditChain.ts           # Merkle chain state & tamper simulation
+│   └── useSecurityStream.ts       # Live WebSocket & mock telemetry engine
+├── backend/                       # Python FastAPI Backend
+│   ├── app/                       # PEP gateway, RBAC, and risk scorers
+│   ├── tests/                     # Pytest suite
+│   └── requirements.txt           # Python dependencies
+└── types/                         # TypeScript interfaces
+    ├── audit.ts
+    └── telemetry.ts
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## ⚡ Getting Started
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 1. Frontend (Next.js)
 
-## Learn More
+```bash
+# Install dependencies
+npm install
 
-To learn more about Next.js, take a look at the following resources:
+# Run local development server
+npm run dev
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Open [http://localhost:3000](http://localhost:3000) to view the SOC dashboard.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 2. Backend (FastAPI PEP Gateway)
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+cd backend
+pip install -r requirements.txt
+pytest
+```
