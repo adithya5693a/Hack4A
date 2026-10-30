@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import re
 import unicodedata
+import urllib.parse
+import base64
 from dataclasses import dataclass
 from typing import Any
 
@@ -69,6 +71,8 @@ _INJECTION_COMPILED = [
     for name, pattern, weight in INJECTION_PATTERNS
 ]
 
+B64_REGEX = re.compile(r"[A-Za-z0-9+/=]{16,}")
+
 
 @dataclass(frozen=True)
 class RiskResult:
@@ -78,9 +82,37 @@ class RiskResult:
     matches: list[str]
 
 
+def _decode_potential_base64(text: str) -> str:
+    """Finds and decodes inline base64 blobs like 'echo <b64> | base64 -d'."""
+    matches = B64_REGEX.findall(text)
+    decoded_fragments = []
+    for m in matches:
+        try:
+            padded = m + "=" * (-len(m) % 4)
+            dec = base64.b64decode(padded).decode("utf-8", errors="ignore")
+            if dec and any(c.isalnum() for c in dec):
+                decoded_fragments.append(dec)
+        except Exception:
+            continue
+    return " ".join(decoded_fragments)
+
+
 def normalize_text(text: str) -> str:
-    """Lowercase, Unicode NFKC, collapse whitespace."""
-    normalized = unicodedata.normalize("NFKC", text).lower()
+    """URL decode, strip zero-width characters, expand inline base64, lowercase, Unicode NFKC, collapse whitespace."""
+    try:
+        decoded = urllib.parse.unquote(text)
+    except Exception:
+        decoded = text
+
+    # Strip zero-width spaces, joiners, and non-breaking spaces
+    clean_chars = re.sub(r"[\u200b\u200c\u200d\ufeff\u00a0]", "", decoded)
+
+    # Expand any inline base64 commands so regex catches the unmasked payload
+    b64_expansion = _decode_potential_base64(clean_chars)
+    if b64_expansion:
+        clean_chars = f"{clean_chars} {b64_expansion}"
+
+    normalized = unicodedata.normalize("NFKC", clean_chars).lower()
     return re.sub(r"\s+", " ", normalized).strip()
 
 

@@ -195,7 +195,12 @@ class PEPGateway:
                 )
 
             # 5. Rule R-TAINT-01: Provenance & Output-Based Taint Tracking
-            agent_is_tainted = getattr(request, "tainted", False) or self._is_tainted(request.agent_id)
+            # Lineage Propagation: Child automatically inherits taint from parent
+            parent_tainted = False
+            if request.parent_agent_id and self._is_tainted(request.parent_agent_id):
+                parent_tainted = True
+                self._mark_tainted(request.agent_id)
+            agent_is_tainted = getattr(request, "tainted", False) or self._is_tainted(request.agent_id) or parent_tainted
             if agent_is_tainted:
                 if tool_name in ["execute_bash", "send_email", "delete_database", "rotate_encryption_keys"]:
                     return PolicyDecision(
@@ -205,7 +210,7 @@ class PEPGateway:
                         risk_score=95.0,
                         risk_level="CRITICAL",
                         tier=3,
-                        reason=f"TAINT VIOLATION: Agent '{request.agent_id}' is tainted. Disallowed outbound tool '{tool_name}'.",
+                        reason=f"TAINT/LINEAGE VIOLATION: Agent '{request.agent_id}' (or parent '{request.parent_agent_id}') is tainted. Disallowed outbound tool '{tool_name}'.",
                         reasons=["agent tainted by prior injection", f"TAINT VIOLATION: Tool '{tool_name}' disallowed"]
                     )
                 target_file = str(args.get("filename", "") or args.get("path", "")).lower()

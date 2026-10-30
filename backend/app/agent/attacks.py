@@ -285,6 +285,7 @@ async def run_legitimate_suite() -> Dict[str, Any]:
     """
     Executes a labeled suite of 6 legitimate tasks to rigorously compute false blocks.
     """
+    gateway.reset_metrics()
     tasks: List[Dict[str, Any]] = []
 
     # Task 1: Read Report (Safe Tier 1)
