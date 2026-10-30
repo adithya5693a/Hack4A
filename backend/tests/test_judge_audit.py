@@ -216,3 +216,47 @@ async def test_user_prompt_rotate_without_scenario_id():
     assert res.steps[0]["tool_name"] == "rotate_encryption_keys"
     assert res.steps[0]["decision"] == "DENY"
     assert res.steps[0]["rule_id"] in ["R-RBAC-01", "R-ADMIN-01"]
+
+
+@pytest.mark.asyncio
+async def test_prompt_read_vault_file_by_name():
+    """Prompt 'please read user_manual.txt' -> one step, filename is user_manual.txt."""
+    gateway.reset_metrics()
+    agent = AutonomousAgent(agent_id="agent_worker_01")
+    res = await agent.run_scenario(
+        prompt="please read user_manual.txt",
+        scenario_id=None,
+        shield_enabled=True
+    )
+    assert len(res.steps) == 1
+    assert res.steps[0]["tool_name"] == "read_document"
+    assert res.steps[0]["arguments"]["filename"] == "user_manual.txt"
+
+
+@pytest.mark.asyncio
+async def test_prompt_run_echo_hello_as_operator():
+    """Prompt 'run `echo hello`' as operator -> bash argument is 'echo hello'."""
+    gateway.reset_metrics()
+    agent = AutonomousAgent(agent_id="agent_operator_sysadmin")
+    res = await agent.run_scenario(
+        prompt="run `echo hello`",
+        scenario_id=None,
+        shield_enabled=False
+    )
+    assert len(res.steps) == 1
+    assert res.steps[0]["tool_name"] == "execute_bash"
+    assert res.steps[0]["arguments"]["command"] == "echo hello"
+
+
+@pytest.mark.asyncio
+async def test_prompt_unknown_zero_tool_calls():
+    """Prompt 'what is the weather in Bengaluru' -> steps == [] (zero tool calls, no hallucinated fallback)."""
+    gateway.reset_metrics()
+    agent = AutonomousAgent(agent_id="agent_worker_01")
+    res = await agent.run_scenario(
+        prompt="what is the weather in Bengaluru",
+        scenario_id=None,
+        shield_enabled=True
+    )
+    assert res.steps == []
+

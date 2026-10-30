@@ -1,7 +1,10 @@
+import pytest
 from app.pep import rbac
 from app.pep.policy import AGENT_REGISTRY
 
 TEST_FIXTURE_AGENTS = {
+    "agent_shadow_test": {"role": "worker", "description": "Shadow test worker agent", "parent": None},
+    "agent-admin": {"role": "admin", "description": "Member 1 test fixture admin", "parent": None},
     "agent-1": {"role": "worker", "description": "Member 1 test fixture worker", "parent": None},
     "agent-gw": {"role": "operator", "description": "Member 1 gateway test agent", "parent": None},
     "approval-agent": {"role": "operator", "description": "Approval flow agent", "parent": None},
@@ -21,7 +24,13 @@ TEST_FIXTURE_AGENTS = {
 }
 
 
-def pytest_runtest_setup() -> None:
+@pytest.fixture(autouse=True)
+def manage_test_registry():
+    """Isolates test agents in AGENT_REGISTRY: updates before test, restores exact state after."""
     with rbac._lock:
         rbac._call_windows.clear()
+    saved = dict(AGENT_REGISTRY)
     AGENT_REGISTRY.update(TEST_FIXTURE_AGENTS)
+    yield
+    AGENT_REGISTRY.clear()
+    AGENT_REGISTRY.update(saved)

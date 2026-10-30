@@ -56,11 +56,6 @@ AGENT_REGISTRY: Dict[str, Dict[str, Any]] = {
         "role": "worker",
         "description": "Standard autonomous worker agent",
         "parent": "agent_supervisor_support"
-    },
-    "agent_shadow_test": {
-        "role": "worker",
-        "description": "Shadow tool testing worker agent",
-        "parent": "agent_supervisor_support"
     }
 }
 

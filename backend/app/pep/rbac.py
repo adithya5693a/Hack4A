@@ -99,7 +99,7 @@ def check_permission(request: ToolRequest) -> tuple[bool, int, list[str]]:
 
     if tool_name not in TOOL_TIERS and tool_name not in ADMIN_ONLY_TOOLS:
         reasons.append("unknown tool")
-        tier = 3
+        return False, 3, reasons
 
     call_count = _record_call(request.agent_id)
 
