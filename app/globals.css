@@ -1,12 +1,12 @@
 @import "tailwindcss";
 
 @theme {
-  --color-charcoal: #171717;
+  --color-charcoal: #17191c;
+  --color-midnight: #17191c;
   --color-forest: #06110c;
-  --color-crimson: #a31c18;
-
-  --color-steel: #8f9b94;
-  --color-coral: #a31c18;
+  --color-crimson: #ff4b32;
+  --color-coral: #ff4b32;
+  --color-steel: #929da7;
 
   --font-serif: "Playfair Display", "Cinzel", Georgia, serif;
   --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
@@ -16,30 +16,33 @@
 }
 
 :root {
-  --charcoal: #171717;
+  --charcoal: #17191c;
+  --midnight: #17191c;
   --forest: #06110c;
-  --crimson: #a31c18;
+  --crimson: #ff4b32;
+  --coral: #ff4b32;
+  --steel: #929da7;
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 html, body {
   overscroll-behavior: none;
   -webkit-tap-highlight-color: transparent;
-  background-color: #171717;
+  background-color: #17191c;
   color: #ededed;
   font-family: var(--font-geist-mono), "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 /* Subtle luxury cybernetic mesh background */
 .soc-mesh-grid {
-  background-image: linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-                    linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-image: linear-gradient(to right, rgba(146, 157, 167, 0.05) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(146, 157, 167, 0.05) 1px, transparent 1px);
   background-size: 48px 48px;
 }
 
-/* Crimson Red Ambient Flare */
+/* Coral Orange Ambient Flare */
 .crimson-ambient-flare {
-  background: radial-gradient(circle at 75% 25%, rgba(163, 28, 24, 0.22) 0%, rgba(163, 28, 24, 0.08) 35%, transparent 70%);
+  background: radial-gradient(circle at 75% 25%, rgba(255, 75, 50, 0.22) 0%, rgba(255, 75, 50, 0.08) 35%, transparent 70%);
 }
 
 /* Forest Green Ambient Depth */
@@ -61,24 +64,24 @@ button:active {
   transform: scale(0.97);
 }
 
-/* High-tech SOC scrollbar in Crimson Red & Forest Green */
+/* High-tech SOC scrollbar in Vibrant Coral Orange & Cool Steel Grey */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(163, 28, 24, 0.45) transparent;
+  scrollbar-color: rgba(255, 75, 50, 0.55) transparent;
 }
 *::-webkit-scrollbar {
   width: 5px;
   height: 5px;
 }
 *::-webkit-scrollbar-track {
-  background: rgba(6, 17, 12, 0.8);
+  background: #17191c;
 }
 *::-webkit-scrollbar-thumb {
-  background: rgba(163, 28, 24, 0.45);
+  background: rgba(255, 75, 50, 0.45);
   border-radius: 4px;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background: rgba(163, 28, 24, 0.8);
+  background: rgba(255, 75, 50, 0.85);
 }
 
 /* Animations */

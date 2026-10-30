@@ -58,9 +58,9 @@ export default function HITLApprovalModal({
       <div
         role="dialog"
         aria-modal="true"
-        className="relative w-full max-w-lg bg-charcoal rounded-xl border border-crimson/80 shadow-[0_0_35px_rgba(163,28,24,0.35)] overflow-hidden font-mono z-10 animate-[modalIn_180ms_cubic-bezier(0.23,1,0.32,1)_forwards]"
+        className="relative w-full max-w-lg bg-[#17191c] rounded-xl border border-crimson/80 shadow-[0_0_35px_rgba(255,75,50,0.35)] overflow-hidden font-mono z-10 animate-[modalIn_180ms_cubic-bezier(0.23,1,0.32,1)_forwards]"
       >
-        {/* Compact Emergency Banner in Crimson Red */}
+        {/* Compact Emergency Banner in Coral Orange */}
         <div className="bg-crimson px-3.5 py-1.5 flex items-center justify-between text-white text-[11px] font-bold tracking-wider uppercase select-none">
           <div className="flex items-center gap-1.5">
             <Radio className="h-3.5 w-3.5 animate-pulse text-white" />
@@ -77,28 +77,28 @@ export default function HITLApprovalModal({
         </div>
 
         {/* Modal Header */}
-        <div className="px-4 py-3 bg-forest border-b border-neutral-800 flex items-start justify-between gap-3">
+        <div className="px-4 py-3 bg-[#17191c] border-b border-[#929da7]/20 flex items-start justify-between gap-3">
           <div>
             <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-crimson text-white tracking-widest uppercase shadow-[0_0_10px_rgba(163,28,24,0.5)]">
+              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-crimson text-white tracking-widest uppercase shadow-[0_0_10px_rgba(255,75,50,0.5)]">
                 Threat Level: {event.risk_score}% {isCritical ? "CRITICAL" : "HIGH"}
               </span>
-              <span className="text-[11px] text-neutral-400">
-                ID: <strong className="text-neutral-200">{event.id}</strong>
+              <span className="text-[11px] text-[#929da7]">
+                ID: <strong className="text-zinc-200">{event.id}</strong>
               </span>
             </div>
             <h2 className="text-sm font-bold text-neutral-100 tracking-wide mt-1 flex items-center gap-1.5">
               <Lock className="h-3.5 w-3.5 text-crimson" />
               Dangerous Action Detected
             </h2>
-            <p className="text-[10px] text-neutral-400 mt-0.5">
+            <p className="text-[10px] text-[#929da7] mt-0.5">
               An agent attempted a critical action that requires manual human confirmation before running.
             </p>
           </div>
 
           <button
             onClick={onClose}
-            className="p-1 rounded-md text-neutral-400 hover:text-white hover:bg-neutral-800 active:scale-[0.97] transition-all duration-100 ease-out cursor-pointer"
+            className="p-1 rounded-md text-[#929da7] hover:text-white hover:bg-zinc-800 active:scale-[0.97] transition-all duration-100 ease-out cursor-pointer"
             title="Dismiss / Review later"
           >
             <X className="h-4 w-4" />
@@ -109,11 +109,11 @@ export default function HITLApprovalModal({
         <div className="p-4 space-y-3 max-h-[62vh] overflow-y-auto">
           {/* Diagnostic Alert Box */}
           {event.diagnosis && (
-            <div className="rounded-lg bg-crimson/15 border border-crimson/60 p-2.5 shadow-[0_0_12px_rgba(163,28,24,0.2)]">
+            <div className="rounded-lg bg-crimson/15 border border-crimson/60 p-2.5 shadow-[0_0_12px_rgba(255,75,50,0.25)]">
               <div className="flex items-start gap-2">
                 <ShieldAlert className="h-4 w-4 text-crimson flex-shrink-0 mt-0.5" />
                 <div>
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-red-300">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-[#ff4b32]">
                     Why Was This Stopped?
                   </div>
                   <p className="text-[11px] text-red-100 mt-0.5 leading-snug font-medium">
@@ -126,8 +126,8 @@ export default function HITLApprovalModal({
 
           {/* Compact Agent & Tool Meta */}
           <div className="grid grid-cols-2 gap-2 text-xs">
-            <div className="bg-neutral-900/90 rounded-lg p-2.5 border border-forest">
-              <div className="text-[9px] uppercase tracking-wider text-neutral-400 flex items-center gap-1">
+            <div className="bg-[#1e2329]/60 rounded-lg p-2.5 border border-[#929da7]/20">
+              <div className="text-[9px] uppercase tracking-wider text-[#929da7] flex items-center gap-1">
                 <Bot className="h-3 w-3 text-emerald-400" />
                 Triggering AI Agent
               </div>
@@ -136,8 +136,8 @@ export default function HITLApprovalModal({
               </div>
             </div>
 
-            <div className="bg-neutral-900/90 rounded-lg p-2.5 border border-forest">
-              <div className="text-[9px] uppercase tracking-wider text-neutral-400 flex items-center gap-1">
+            <div className="bg-[#1e2329]/60 rounded-lg p-2.5 border border-[#929da7]/20">
+              <div className="text-[9px] uppercase tracking-wider text-[#929da7] flex items-center gap-1">
                 <Wrench className="h-3 w-3 text-crimson" />
                 Requested Command
               </div>
@@ -148,15 +148,15 @@ export default function HITLApprovalModal({
           </div>
 
           {/* Arguments Payload Inspection */}
-          <div className="bg-neutral-900/90 rounded-lg p-3 border border-neutral-800">
+          <div className="bg-[#1e2329]/60 rounded-lg p-3 border border-[#929da7]/20">
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[10px] uppercase tracking-wider text-neutral-400 flex items-center gap-1 font-semibold">
-                <Terminal className="h-3 w-3 text-neutral-400" />
+              <span className="text-[10px] uppercase tracking-wider text-[#929da7] flex items-center gap-1 font-semibold">
+                <Terminal className="h-3 w-3 text-[#929da7]" />
                 Command Parameters
               </span>
-              <span className="text-[9px] text-neutral-500 font-mono">JSON</span>
+              <span className="text-[9px] text-[#929da7]/80 font-mono">JSON</span>
             </div>
-            <pre className="p-2 rounded bg-charcoal border border-neutral-800 text-[11px] text-emerald-400 overflow-x-auto whitespace-pre-wrap font-mono max-h-32">
+            <pre className="p-2 rounded bg-[#17191c] border border-[#929da7]/20 text-[11px] text-emerald-400 overflow-x-auto whitespace-pre-wrap font-mono max-h-32">
               {(() => {
                 try {
                   return JSON.stringify(JSON.parse(event.args), null, 2);
@@ -168,32 +168,32 @@ export default function HITLApprovalModal({
           </div>
 
           {/* Timestamp footer strip */}
-          <div className="flex items-center justify-between text-[10px] text-neutral-400 px-1">
+          <div className="flex items-center justify-between text-[10px] text-[#929da7] px-1">
             <span className="flex items-center gap-1">
-              <Clock className="h-3 w-3 text-neutral-500" />
+              <Clock className="h-3 w-3 text-[#929da7]/70" />
               {new Date(event.timestamp).toLocaleTimeString()}
             </span>
-            <span>Reviewer: <strong className="text-neutral-200">Security Operator</strong></span>
+            <span>Reviewer: <strong className="text-zinc-200">Security Operator</strong></span>
           </div>
         </div>
 
         {/* Modal Actions (Dual CTAs with crisp active:scale-[0.97] feedback under 160ms) */}
-        <div className="p-3 sm:p-4 bg-forest border-t border-neutral-800 flex items-center justify-end gap-2.5">
-          {/* Button 1: [Allow Once] (styled with subtle #06110C Forest Green border/text) */}
+        <div className="p-3 sm:p-4 bg-[#17191c] border-t border-[#929da7]/20 flex items-center justify-end gap-2.5">
+          {/* Button 1: [Allow Once] */}
           <button
             onClick={() => handleDecision("APPROVE")}
             disabled={isSubmitting}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg font-mono text-xs font-bold uppercase tracking-wider bg-forest border border-emerald-900/80 text-emerald-300 hover:border-emerald-700 hover:bg-emerald-950/40 active:scale-[0.97] transition-all duration-100 ease-out shadow-[0_0_10px_rgba(6,17,12,0.8)] disabled:opacity-50 cursor-pointer"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg font-mono text-xs font-bold uppercase tracking-wider bg-[#17191c] border border-emerald-900/80 text-emerald-300 hover:border-emerald-700 hover:bg-emerald-950/40 active:scale-[0.97] transition-all duration-100 ease-out shadow-sm disabled:opacity-50 cursor-pointer"
           >
             <CheckCircle className="h-3.5 w-3.5 text-emerald-400" />
             <span>[Allow Once]</span>
           </button>
 
-          {/* Button 2: [Block & Protect] (styled with #A31C18 Crimson Red) */}
+          {/* Button 2: [Block & Protect] */}
           <button
             onClick={() => handleDecision("REJECT")}
             disabled={isSubmitting}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg font-mono text-xs font-bold uppercase tracking-wider bg-crimson text-white hover:bg-red-800 active:scale-[0.97] transition-all duration-100 ease-out border border-red-500/70 shadow-[0_0_20px_rgba(163,28,24,0.5)] disabled:opacity-50 cursor-pointer"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg font-mono text-xs font-bold uppercase tracking-wider bg-crimson text-white hover:bg-[#e03d25] active:scale-[0.97] transition-all duration-100 ease-out border border-[#ff4b32]/80 shadow-[0_0_20px_rgba(255,75,50,0.5)] disabled:opacity-50 cursor-pointer"
           >
             <Ban className="h-3.5 w-3.5" />
             <span>[Block & Protect]</span>

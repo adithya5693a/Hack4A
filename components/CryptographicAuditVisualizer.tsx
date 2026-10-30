@@ -61,26 +61,23 @@ export default function CryptographicAuditVisualizer() {
 
   return (
     <div
-      className="bg-charcoal border border-forest rounded-xl p-4 shadow-[0_4px_25px_rgba(6,17,12,0.9)] font-mono relative overflow-hidden"
-      style={{
-        boxShadow: "0 0 25px rgba(6, 17, 12, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.03)",
-      }}
+      className="bg-gradient-to-b from-[#1e2329]/70 to-[#17191c] border border-[#929da7]/30 rounded-2xl p-4 sm:p-5 shadow-[0_4px_25px_rgba(0,0,0,0.85)] font-mono relative overflow-hidden"
     >
       {/* Background ambient glow based on chain state */}
       <div
         className={`absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl pointer-events-none transition-colors duration-300 ${
-          isTampered ? "bg-crimson/15" : "bg-forest opacity-80"
+          isTampered ? "bg-crimson/20" : "bg-[#929da7]/10"
         }`}
       />
 
       {/* Header & Controls Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-neutral-800/80">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-[#929da7]/20">
         <div className="flex items-center gap-2.5">
           <div
             className={`flex h-8 w-8 items-center justify-center rounded-lg border transition-colors duration-150 ${
               isTampered
-                ? "bg-crimson/20 border-crimson text-crimson shadow-[0_0_12px_rgba(163,28,24,0.4)]"
-                : "bg-forest border-emerald-900/70 text-emerald-400 shadow-[0_0_12px_rgba(6,17,12,0.8)]"
+                ? "bg-crimson/20 border-crimson text-crimson shadow-[0_0_12px_rgba(255,75,50,0.4)]"
+                : "bg-[#17191c] border-[#929da7]/30 text-emerald-400 shadow-sm"
             }`}
           >
             {isTampered ? (
@@ -91,14 +88,14 @@ export default function CryptographicAuditVisualizer() {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-xs font-bold text-neutral-100 uppercase tracking-wider">
+              <h3 className="text-base sm:text-lg font-bold text-neutral-100 uppercase tracking-wide">
                 Tamper-Proof Activity Log
               </h3>
-              <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-forest text-emerald-400 border border-emerald-900/60 uppercase">
+              <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-[#17191c] text-[#929da7] border border-[#929da7]/30 uppercase">
                 Cryptographic Trail
               </span>
             </div>
-            <p className="text-[10px] text-neutral-400 mt-0.5">
+            <p className="text-xs sm:text-sm text-[#929da7] mt-0.5">
               Every decision is mathematically chained. Any unauthorized edit breaks the chain immediately.
             </p>
           </div>
@@ -112,8 +109,8 @@ export default function CryptographicAuditVisualizer() {
             disabled={isVerifying}
             className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider active:scale-[0.97] transition-all duration-100 ease-out cursor-pointer disabled:opacity-60 ${
               verificationResult.valid
-                ? "bg-forest border border-emerald-800/90 text-emerald-300 hover:border-emerald-600 hover:bg-emerald-950/40 shadow-[0_0_12px_rgba(6,17,12,0.8)]"
-                : "bg-crimson/20 border border-crimson text-red-200 hover:bg-crimson/30 shadow-[0_0_12px_rgba(163,28,24,0.3)]"
+                ? "bg-[#17191c] border border-emerald-800/90 text-emerald-300 hover:border-emerald-600 hover:bg-emerald-950/40 shadow-sm"
+                : "bg-crimson/20 border border-crimson text-red-200 hover:bg-crimson/30 shadow-[0_0_12px_rgba(255,75,50,0.3)]"
             }`}
           >
             {isVerifying ? (
@@ -135,8 +132,8 @@ export default function CryptographicAuditVisualizer() {
           </button>
 
           {/* Switch / Toggle: Simulate Log Tampering */}
-          <label className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-neutral-900 border border-neutral-800 hover:border-neutral-700 cursor-pointer select-none active:scale-[0.97] transition-all duration-100">
-            <span className="text-[11px] font-semibold text-neutral-300">
+          <label className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#17191c] border border-[#929da7]/30 hover:border-[#929da7]/60 cursor-pointer select-none active:scale-[0.97] transition-all duration-100">
+            <span className="text-[11px] font-semibold text-[#929da7]">
               Simulate Log Tampering
             </span>
             <div className="relative inline-flex items-center cursor-pointer">
@@ -146,7 +143,7 @@ export default function CryptographicAuditVisualizer() {
                 onChange={handleToggleTampering}
                 className="sr-only peer"
               />
-              <div className="w-8 h-4 bg-neutral-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-crimson shadow-[inset_0_1px_3px_rgba(0,0,0,0.5)]" />
+              <div className="w-8 h-4 bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-crimson shadow-[inset_0_1px_3px_rgba(0,0,0,0.5)]" />
             </div>
           </label>
         </div>
@@ -154,26 +151,26 @@ export default function CryptographicAuditVisualizer() {
 
       {/* Alert Banner When Tamper Detected or Valid Banner */}
       {isTampered ? (
-        <div className="mb-4 p-2.5 rounded-lg bg-crimson/20 border border-crimson text-red-100 flex items-center justify-between text-xs animate-[slideDownIn_180ms_cubic-bezier(0.23,1,0.32,1)] shadow-[0_0_20px_rgba(163,28,24,0.35)]">
+        <div className="mb-4 p-2.5 rounded-lg bg-crimson/20 border border-crimson text-red-100 flex items-center justify-between text-xs animate-[slideDownIn_180ms_cubic-bezier(0.23,1,0.32,1)] shadow-[0_0_20px_rgba(255,75,50,0.35)]">
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-crimson flex-shrink-0 animate-pulse" />
             <span className="font-bold tracking-wide uppercase text-white">
               TAMPER DETECTED: Log entry #2 was secretly modified! Hash chain broken.
             </span>
           </div>
-          <span className="text-[10px] bg-crimson px-2.5 py-0.5 rounded text-white font-bold tracking-wider uppercase shadow-[0_0_8px_rgba(163,28,24,0.6)]">
+          <span className="text-[10px] bg-crimson px-2.5 py-0.5 rounded text-white font-bold tracking-wider uppercase shadow-[0_0_8px_rgba(255,75,50,0.6)]">
             CHAIN BROKEN
           </span>
         </div>
       ) : (
-        <div className="mb-4 p-2 rounded-lg bg-forest border border-emerald-900/60 text-emerald-400 flex items-center justify-between text-xs">
+        <div className="mb-4 p-2 rounded-lg bg-[#17191c] border border-emerald-900/60 text-emerald-400 flex items-center justify-between text-xs">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 flex-shrink-0" />
             <span className="font-semibold tracking-wide text-neutral-200">
               Log Integrity Verified: All 5 Entries Mathematically Intact
             </span>
           </div>
-          <span className="text-[10px] text-emerald-500 font-mono">
+          <span className="text-[10px] text-emerald-400 font-mono">
             Zero Unauthorized Modifications
           </span>
         </div>
@@ -193,10 +190,10 @@ export default function CryptographicAuditVisualizer() {
                 <div
                   className={`w-64 rounded-xl p-3 border font-mono transition-all duration-150 relative ${
                     isBlockTampered
-                      ? "bg-charcoal border-2 border-crimson shadow-[0_0_25px_rgba(163,28,24,0.4)]"
+                      ? "bg-gradient-to-b from-[#1e2329]/70 to-[#17191c] border-2 border-crimson shadow-[0_0_25px_rgba(255,75,50,0.45)]"
                       : isInvalidFromHere
-                      ? "bg-charcoal border border-crimson/70 shadow-[0_0_15px_rgba(163,28,24,0.25)]"
-                      : "bg-charcoal border border-forest hover:border-emerald-900/80 shadow-[0_0_15px_rgba(6,17,12,0.8)]"
+                      ? "bg-gradient-to-b from-[#1e2329]/70 to-[#17191c] border border-crimson/70 shadow-[0_0_15px_rgba(255,75,50,0.25)]"
+                      : "bg-gradient-to-b from-[#1e2329]/60 to-[#17191c] border border-[#929da7]/25 hover:border-[#929da7]/50 shadow-sm"
                   }`}
                 >
                   {/* Top: Block ID & Timestamp */}
@@ -206,17 +203,17 @@ export default function CryptographicAuditVisualizer() {
                         className={`text-xs font-bold px-1.5 py-0.5 rounded ${
                           isBlockTampered || isInvalidFromHere
                             ? "bg-crimson text-white"
-                            : "bg-forest border border-emerald-900/60 text-emerald-400"
+                            : "bg-[#17191c] border border-[#929da7]/30 text-emerald-400"
                         }`}
                       >
                         {block.block_id}
                       </span>
-                      <span className="text-[10px] text-neutral-400">
+                      <span className="text-[10px] text-[#929da7]">
                         {block.agent_id}
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-1 text-[10px] text-neutral-500">
+                    <div className="flex items-center gap-1 text-[10px] text-[#929da7]/80">
                       <Clock className="h-2.5 w-2.5" />
                       <span>{block.timestamp}</span>
                     </div>
@@ -224,7 +221,7 @@ export default function CryptographicAuditVisualizer() {
 
                   {/* Logged Action Preview */}
                   <div className="mb-2.5">
-                    <span className="text-[9px] uppercase tracking-wider text-neutral-400 block">
+                    <span className="text-[9px] uppercase tracking-wider text-[#929da7] block">
                       Logged Agent Action
                     </span>
                     <p
@@ -240,16 +237,16 @@ export default function CryptographicAuditVisualizer() {
                   </div>
 
                   {/* Hash Signatures Box */}
-                  <div className="space-y-1 p-2 rounded bg-neutral-950/90 border border-neutral-800 text-[10px]">
-                    <div className="flex items-center justify-between text-neutral-500">
+                  <div className="space-y-1 p-2 rounded bg-[#17191c] border border-[#929da7]/20 text-[10px]">
+                    <div className="flex items-center justify-between text-[#929da7]">
                       <span>PREV PROOF:</span>
-                      <span className="font-mono text-neutral-400">
+                      <span className="font-mono text-zinc-300">
                         {truncateHash(block.prev_hash)}
                       </span>
                     </div>
 
                     <div className="flex items-center justify-between">
-                      <span className="text-neutral-500">CURRENT:</span>
+                      <span className="text-[#929da7]">CURRENT:</span>
                       <span
                         className={`font-mono font-bold ${
                           isBlockTampered
@@ -283,15 +280,15 @@ export default function CryptographicAuditVisualizer() {
                     <div
                       className={`h-0.5 w-6 transition-colors duration-150 ${
                         blocks[idx + 1].invalid_from_here
-                          ? "bg-crimson shadow-[0_0_8px_rgba(163,28,24,0.6)]"
-                          : "bg-forest border-b border-emerald-900/60"
+                          ? "bg-crimson shadow-[0_0_8px_rgba(255,75,50,0.6)]"
+                          : "bg-[#929da7]/40"
                       }`}
                     />
                     <ArrowRight
                       className={`h-3 w-3 -ml-1 flex-shrink-0 transition-colors duration-150 ${
                         blocks[idx + 1].invalid_from_here
                           ? "text-crimson"
-                          : "text-emerald-600/70"
+                          : "text-[#929da7]"
                       }`}
                     />
                   </div>
