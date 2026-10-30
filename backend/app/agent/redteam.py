@@ -187,7 +187,7 @@ async def run_redteam_harness() -> Dict[str, Any]:
     a14 = AutonomousAgent(agent_id="agent_worker_support")
     # Manually try spoofing request.agent_role="admin"
     from app.models import ToolRequest
-    from app.pep.agentshield_gateway import gateway
+    from app.state import gateway
     req14 = ToolRequest(
         call_id="call_spoof",
         agent_id="agent_worker_support",

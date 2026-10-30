@@ -120,8 +120,8 @@ async def pep_policy() -> dict:
 from app.crypto.merkle_log import merkle_ledger
 from app.agent.tools import OUTBOX, clear_outbox
 from app.agent.core import agent
-from app.pep.agentshield_gateway import gateway as agentshield_gw, PENDING_APPROVAL_EVENTS
-import app.pep.agentshield_gateway as gw_mod
+from app.state import gateway as agentshield_gw, PENDING_APPROVAL_EVENTS
+# gw_mod merged into state
 from app.models import SystemMetrics
 from app.agent.attacks import (
     run_attack_poisoned_invoice,
@@ -280,9 +280,11 @@ async def run_full_demo():
     shield_off_results = []
     for a in attacks:
         r = await trigger_attack(a, shield_enabled=False)
+        actual_status = "COMPROMISED" if r.get("compromised", False) else r.get("status", "EXECUTED")
         shield_off_results.append({
             "scenario": a,
-            "status": "COMPROMISED",
+            "status": actual_status,
+            "output_preview": (r.get("steps", [{}])[-1].get("output", ""))[:60],
             "shield": "OFF"
         })
 

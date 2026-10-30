@@ -42,9 +42,10 @@ class TamperEvidentAuditLedger:
 
     def _create_genesis_block(self):
         self.chain = []
+        now_ts = round(time.time(), 4)
         genesis_block = AuditBlock(
             index=0,
-            timestamp=1730300000.0,
+            timestamp=now_ts,
             call_id="genesis_call_000",
             agent_id="SYSTEM_ROOT",
             agent_role="system",
@@ -60,7 +61,7 @@ class TamperEvidentAuditLedger:
             previous_hash=GENESIS_PREV_HASH,
             block_hash=self._calculate_block_hash(
                 index=0,
-                timestamp=1730300000.0,
+                timestamp=now_ts,
                 call_id="genesis_call_000",
                 agent_id="SYSTEM_ROOT",
                 tool_name="GENESIS",
@@ -96,6 +97,7 @@ class TamperEvidentAuditLedger:
         preview = make_args_preview(request.arguments, max_len=80)
         new_index = len(self.chain)
 
+        dec_str = decision.status.value if hasattr(decision.status, 'value') else str(decision.status)
         block_hash = self._calculate_block_hash(
             index=new_index,
             timestamp=decision.timestamp,
@@ -103,7 +105,7 @@ class TamperEvidentAuditLedger:
             agent_id=request.agent_id,
             tool_name=request.tool_name,
             arguments_hash=args_hash,
-            decision=decision.status,
+            decision=dec_str,
             rule_id=decision.rule_id,
             previous_hash=prev_block.block_hash
         )
@@ -118,7 +120,7 @@ class TamperEvidentAuditLedger:
             tool_name=request.tool_name,
             arguments_hash=args_hash,
             args_preview=preview,
-            decision=decision.status,
+            decision=dec_str,
             rule_id=decision.rule_id,
             reason=decision.reason,
             risk_score=decision.risk_score,

@@ -7,7 +7,7 @@ import asyncio
 from typing import Dict, Any, List, Optional
 from app.agent.core import AutonomousAgent
 from app.agent.tools import TOOLS_REGISTRY, clear_outbox
-from app.pep.agentshield_gateway import gateway, PENDING_APPROVAL_EVENTS
+from app.state import gateway
 
 
 # -------------------------------------------------------------
@@ -246,8 +246,8 @@ async def run_legitimate_task_with_approval(
     async def auto_resolver_task():
         if auto_resolve in ["approve", "reject"]:
             await asyncio.sleep(0.05)
-            for cid in list(PENDING_APPROVAL_EVENTS.keys()):
-                gateway.resolve_approval(cid, "APPROVE" if auto_resolve == "approve" else "REJECT")
+            for item in gateway._approval_manager.list_pending():
+                gateway.resolve_approval(item["call_id"], "APPROVE" if auto_resolve == "approve" else "REJECT")
 
     task = None
     if auto_resolve:
@@ -335,7 +335,8 @@ async def run_legitimate_suite() -> Dict[str, Any]:
     a5 = AutonomousAgent(agent_id="agent_worker_finance")
     async def resolve_email():
         await asyncio.sleep(0.05)
-        for cid in list(PENDING_APPROVAL_EVENTS.keys()):
+        for item in gateway._approval_manager.list_pending():
+            cid = item["call_id"]
             gateway.resolve_approval(cid, "APPROVE")
     task5 = asyncio.create_task(resolve_email())
     s5 = await a5.execute_tool(

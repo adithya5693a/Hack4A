@@ -7,7 +7,7 @@ import uuid
 import time
 from typing import Dict, Any, List, Optional
 from app.models import ToolRequest, PolicyDecision
-from app.pep.agentshield_gateway import gateway
+from app.state import gateway
 from app.crypto.merkle_log import merkle_ledger
 from app.agent.tools import TOOLS_REGISTRY, AGENT_REGISTRY
 
@@ -114,7 +114,15 @@ class AutonomousAgent:
                 res_obj = tool_fn(**arguments)
                 step_record["output"] = res_obj["output"] if isinstance(res_obj, dict) else str(res_obj)
                 step_record["status"] = "SUCCESS"
-                # Provenance-Based Taint: untrusted result automatically taints agent context
+                output_text = step_record["output"]
+                # Dynamic Output Injection Scanning: scan tool content before returning to agent
+                scan_res = await gateway.scan_tool_output(call_id, self.agent_id, tool_name, output_text)
+                if scan_res.get("flagged"):
+                    self.tainted = True
+                    step_record["injection_flagged"] = True
+                    step_record["injection_matches"] = scan_res.get("matches", [])
+
+                # Provenance-Based Taint: untrusted source label also automatically taints context
                 if isinstance(res_obj, dict) and res_obj.get("trust") == "UNTRUSTED":
                     self.tainted = True
             except Exception as e:

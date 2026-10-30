@@ -10,7 +10,14 @@ import json
 from typing import Dict, Any, Tuple, Optional
 
 # Development secret with environment variable override
-DEFAULT_SECRET = os.getenv("TOOL_SIGNER_KEY", "agentshield_secret_hmac_key_2026_parallax")
+# Enforce cryptographic secret from environment variable for tamper resistance
+import secrets
+_ENV_SECRET = os.getenv("TOOL_SIGNER_KEY")
+if not _ENV_SECRET:
+    # Generate ephemeral cryptographically secure 256-bit key if not provided in env
+    DEFAULT_SECRET = os.getenv("TOOL_SIGNER_KEY_DEV", secrets.token_hex(32))
+else:
+    DEFAULT_SECRET = _ENV_SECRET
 
 
 class ToolSigner:

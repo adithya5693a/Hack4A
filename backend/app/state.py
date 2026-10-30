@@ -1,3 +1,9 @@
+"""
+AGENTSHIELD Unified System State & Singletons
+Single PEPGateway instance wired with HMAC-SHA256 Tool Signer,
+SHA-256 Hash-Chained Audit Ledger, and Live WebSocket Broadcaster.
+"""
+
 from app.pep.approval_manager import ApprovalManager
 from app.pep.gateway import PEPGateway
 from app.ws_manager import ConnectionManager
