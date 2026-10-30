@@ -1,9 +1,10 @@
 from datetime import datetime, timezone
+from typing import Optional
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.models import ApprovalAction, ScanOutputRequest, SecurityException, ToolRequest
+from app.models import ApprovalAction, ScanOutputRequest, SecurityException, ToolRequest, AgentRunRequest
 from app.pep.rbac import ADMIN_ONLY_TOOLS, ALLOWED_EMAIL_DOMAINS, TOOL_TIERS
 from app.pep.risk_scorer import RISK_ESCALATION_THRESHOLD
 from app.state import approval_manager, gateway, ws_manager
@@ -120,8 +121,8 @@ async def pep_policy() -> dict:
 from app.crypto.merkle_log import merkle_ledger
 from app.agent.tools import OUTBOX, clear_outbox
 from app.agent.core import agent
-from app.state import gateway as agentshield_gw, PENDING_APPROVAL_EVENTS
-# gw_mod merged into state
+from app.state import gateway as agentshield_gw
+PENDING_APPROVAL_EVENTS: dict = {}
 from app.models import SystemMetrics
 from app.agent.attacks import (
     run_attack_poisoned_invoice,
@@ -137,7 +138,7 @@ from app.agent.attacks import (
 )
 from app.agent.redteam import run_redteam_harness
 
-gw_mod.ws_broadcast_hook = ws_manager.broadcast
+# gw_mod.ws_broadcast_hook = ws_manager.broadcast  (already wired in app/state.py)
 
 
 @app.get("/api/outbox")
