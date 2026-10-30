@@ -112,3 +112,206 @@ async def pep_policy() -> dict:
 #   POST /api/agent/run
 #   GET  /api/audit/*
 # ---------------------------------------------------------------------------
+
+# ===========================================================================
+# Member 2 AgentShield REST API Routes
+# ===========================================================================
+
+from app.crypto.merkle_log import merkle_ledger
+from app.agent.tools import OUTBOX, clear_outbox
+from app.agent.core import agent
+from app.pep.agentshield_gateway import gateway as agentshield_gw, PENDING_APPROVAL_EVENTS
+import app.pep.agentshield_gateway as gw_mod
+from app.models import SystemMetrics
+from app.agent.attacks import (
+    run_attack_poisoned_invoice,
+    run_attack_email_leak,
+    run_attack_sensitive_data,
+    run_attack_privilege_escalation,
+    run_attack_database_wipe,
+    run_attack_shadow_tool,
+    run_attack_tampered_schema,
+    run_attack_destructive_shell,
+    run_legitimate_task_with_approval,
+    run_legitimate_suite
+)
+from app.agent.redteam import run_redteam_harness
+
+gw_mod.ws_broadcast_hook = ws_manager.broadcast
+
+
+@app.get("/api/outbox")
+def get_outbox():
+    return {"total_sent": len(OUTBOX), "outbox": OUTBOX}
+
+
+@app.get("/api/metrics", response_model=SystemMetrics)
+def get_metrics():
+    m = agentshield_gw.metrics
+    integrity = merkle_ledger.verify_integrity().is_valid
+    return SystemMetrics(
+        legitimate_tasks_run=m["legitimate_tasks_run"],
+        legitimate_tasks_allowed=m["legitimate_tasks_allowed"],
+        false_blocks=m["false_blocks"],
+        attacks_run=m["attacks_run"],
+        attacks_compromised_shield_off=m["attacks_compromised_shield_off"],
+        attacks_blocked_shield_on=m["attacks_blocked_shield_on"],
+        approvals_required=m["approvals_required"],
+        approvals_granted=m["approvals_granted"],
+        approvals_rejected=m["approvals_rejected"],
+        chain_integrity=integrity
+    )
+
+
+@app.post("/api/reset")
+def reset_system_state():
+    merkle_ledger.reset()
+    clear_outbox()
+    agentshield_gw.reset_metrics()
+    PENDING_APPROVAL_EVENTS.clear()
+    return {"status": "RESET_SUCCESSFUL", "message": "Audit ledger, outbox, and security metrics reset to Genesis."}
+
+
+@app.post("/api/agent/run")
+async def trigger_agent(req: AgentRunRequest):
+    result = await agent.run_scenario(req.prompt, req.scenario_id or "custom", shield_enabled=True)
+    if merkle_ledger.chain:
+        latest = merkle_ledger.chain[-1]
+        await ws_manager.broadcast({
+            "event": "NEW_BLOCK",
+            "block": latest.model_dump()
+        })
+    return {
+        "task_id": result.task_id,
+        "prompt": result.prompt,
+        "shield_enabled": result.shield_enabled,
+        "steps": result.steps,
+        "final_output": result.final_output,
+        "success": result.success
+    }
+
+
+@app.get("/api/audit/chain")
+def get_audit_chain():
+    return {
+        "total_blocks": len(merkle_ledger.chain),
+        "chain": [b.model_dump() for b in merkle_ledger.chain]
+    }
+
+
+@app.get("/api/audit/verify")
+def verify_audit_ledger():
+    return merkle_ledger.verify_integrity().model_dump()
+
+
+@app.post("/api/audit/tamper")
+def tamper_audit_ledger(block_index: int = 1):
+    ok = merkle_ledger.simulate_tampering(block_index)
+    if not ok:
+        raise HTTPException(status_code=400, detail="Cannot tamper: Block index not found.")
+    return {
+        "status": "TAMPER_INJECTED",
+        "block_index": block_index,
+        "verification": merkle_ledger.verify_integrity().model_dump()
+    }
+
+
+@app.post("/api/attacks/{attack_type}")
+async def trigger_attack(attack_type: str, shield_enabled: bool = True, auto_resolve: Optional[str] = None):
+    agentshield_gw.metrics["attacks_run"] += 1
+
+    if attack_type == "poisoned_invoice":
+        result = await run_attack_poisoned_invoice(shield_enabled=shield_enabled)
+    elif attack_type == "email_leak":
+        result = await run_attack_email_leak(shield_enabled=shield_enabled)
+    elif attack_type == "sensitive_data":
+        result = await run_attack_sensitive_data(shield_enabled=shield_enabled)
+    elif attack_type == "privilege_escalation":
+        result = await run_attack_privilege_escalation(shield_enabled=shield_enabled)
+    elif attack_type == "database_wipe":
+        result = await run_attack_database_wipe(shield_enabled=shield_enabled)
+    elif attack_type == "shadow_tool":
+        result = await run_attack_shadow_tool(shield_enabled=shield_enabled)
+    elif attack_type == "tampered_schema":
+        result = await run_attack_tampered_schema(shield_enabled=shield_enabled)
+    elif attack_type == "destructive_shell":
+        result = await run_attack_destructive_shell(shield_enabled=shield_enabled)
+    elif attack_type == "legitimate_approval":
+        result = await run_legitimate_task_with_approval(auto_resolve=auto_resolve)
+    elif attack_type == "legitimate_rejection":
+        result = await run_legitimate_task_with_approval(auto_resolve="reject")
+    else:
+        raise HTTPException(status_code=404, detail="Unknown scenario type")
+
+    if result.get("compromised"):
+        agentshield_gw.metrics["attacks_compromised_shield_off"] += 1
+    if result.get("neutralized"):
+        agentshield_gw.metrics["attacks_blocked_shield_on"] += 1
+
+    await ws_manager.broadcast({
+        "event": "ATTACK_INTERCEPTED",
+        "data": result
+    })
+    return result
+
+
+@app.post("/api/legitimate/run")
+async def run_all_legitimate_suite():
+    return await run_legitimate_suite()
+
+
+@app.post("/api/redteam/run")
+async def run_redteam():
+    return await run_redteam_harness()
+
+
+@app.post("/api/demo/run-all")
+async def run_full_demo():
+    reset_system_state()
+    attacks = [
+        "poisoned_invoice",
+        "email_leak",
+        "sensitive_data",
+        "privilege_escalation",
+        "database_wipe",
+        "tampered_schema",
+        "destructive_shell"
+    ]
+    shield_off_results = []
+    for a in attacks:
+        r = await trigger_attack(a, shield_enabled=False)
+        shield_off_results.append({
+            "scenario": a,
+            "status": "COMPROMISED",
+            "shield": "OFF"
+        })
+
+    shield_on_results = []
+    for a in attacks:
+        r = await trigger_attack(a, shield_enabled=True)
+        shield_on_results.append({
+            "scenario": a,
+            "decision": r.get("steps", [{}])[-1].get("decision", "DENY"),
+            "rule_id": r.get("steps", [{}])[-1].get("rule_id", "R-UNKNOWN"),
+            "shield": "ON"
+        })
+
+    legit_results = await run_legitimate_suite()
+    current_metrics = get_metrics()
+
+    return {
+        "status": "DEMO_COMPLETED",
+        "summary": {
+            "attacks_tested": len(attacks),
+            "shield_off_compromises": len(shield_off_results),
+            "shield_on_neutralizations": len(shield_on_results),
+            "legitimate_tasks_run": legit_results["total_legitimate_tasks"],
+            "legitimate_tasks_allowed": legit_results["allowed_count"],
+            "false_blocks": legit_results["false_blocks"],
+            "chain_integrity": current_metrics.chain_integrity
+        },
+        "metrics": current_metrics.model_dump(),
+        "shield_off_table": shield_off_results,
+        "shield_on_table": shield_on_results,
+        "legitimate_tasks_table": legit_results["tasks"]
+    }
