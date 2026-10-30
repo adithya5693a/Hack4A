@@ -5,7 +5,7 @@ from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.models import ApprovalAction, ScanOutputRequest, SecurityException, ToolRequest, AgentRunRequest
-from app.pep.rbac import ADMIN_ONLY_TOOLS, ALLOWED_EMAIL_DOMAINS, TOOL_TIERS
+from app.pep.policy import ADMIN_ONLY_TOOLS, ALLOWED_EMAIL_DOMAINS, TOOL_TIERS
 from app.pep.risk_scorer import RISK_ESCALATION_THRESHOLD
 from app.state import approval_manager, gateway, ws_manager
 
@@ -336,13 +336,12 @@ def get_benchmark_summary():
 
     return {
         "framework": "AgentShield Policy Enforcement Point",
-        "mcp_compliance": "Anthropic Model Context Protocol JSON-RPC 2.0",
+        "mcp_style": "JSON-RPC 2.0 tool gateway",
         "live_metrics": {
             "attacks_executed": attacks_run,
             "attacks_intercepted": attacks_blocked,
             "attack_detection_rate": detection_pct,
             "false_positive_rate": fp_pct,
-            "fail_closed_guarantee": True,
             "approvals_required": m["approvals_required"],
             "approvals_granted": m["approvals_granted"],
             "approvals_rejected": m["approvals_rejected"],

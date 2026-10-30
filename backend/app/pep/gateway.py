@@ -124,20 +124,18 @@ class PEPGateway:
             canonical_tool = TOOL_ALIASES.get(tool_name, tool_name)
 
             # 2. Rule R-REG-01: Tool Existence & Registry Check
-            # Unknown tool fails closed as DENY
-            from app.agent.tools import TOOLS_REGISTRY
-            if tool_name not in TOOLS_REGISTRY and canonical_tool not in TOOLS_REGISTRY:
-                if tool_name not in TOOL_TIERS and tool_name not in ADMIN_ONLY_TOOLS:
-                    return PolicyDecision(
-                        call_id=request.call_id,
-                        status=DecisionStatus.DENY,
-                        rule_id="R-REG-01",
-                        risk_score=100.0,
-                        risk_level="CRITICAL",
-                        tier=3,
-                        reason=f"SECURITY ALERT: Unregistered shadow tool '{tool_name}' blocked!",
-                        reasons=[f"SECURITY ALERT: Unregistered shadow tool '{tool_name}' blocked!"]
-                    )
+            # Unknown tool fails closed as DENY using centralized policy module
+            if tool_name not in TOOL_TIERS and canonical_tool not in TOOL_TIERS and tool_name not in ADMIN_ONLY_TOOLS:
+                return PolicyDecision(
+                    call_id=request.call_id,
+                    status=DecisionStatus.DENY,
+                    rule_id="R-REG-01",
+                    risk_score=100.0,
+                    risk_level="CRITICAL",
+                    tier=3,
+                    reason=f"SECURITY ALERT: Unregistered shadow tool '{tool_name}' blocked!",
+                    reasons=[f"SECURITY ALERT: Unregistered shadow tool '{tool_name}' blocked!"]
+                )
 
             # 3. Rule R-SIG-01: Cryptographic Tool Manifest Signature Check
             if self._signature_verifier is not None:
@@ -156,27 +154,21 @@ class PEPGateway:
                         reason="CRYPTOGRAPHIC ALERT: Tool signature verification failed. Manifest unsigned or tampered.",
                         reasons=["unsigned or tampered tool"]
                     )
-            elif tool_name in TOOLS_REGISTRY:
-                tool_meta = TOOLS_REGISTRY[tool_name]
-                is_authentic, msg = tool_signer.verify_tool(
-                    tool_name, tool_meta["schema"], tool_meta["risk_tier"], tool_meta.get("signature", "")
-                )
-                if not is_authentic:
-                    return PolicyDecision(
-                        call_id=request.call_id,
-                        status=DecisionStatus.DENY,
-                        rule_id="R-SIG-01",
-                        risk_score=100.0,
-                        risk_level="CRITICAL",
-                        tier=3,
-                        reason=f"CRYPTOGRAPHIC ALERT: {msg}",
-                        reasons=[f"CRYPTOGRAPHIC ALERT: {msg}"]
-                    )
 
             # 4. Rule R-UNTRUSTED-INTENT-01: Untrusted Content Origin Restriction
-            # When tool calls originate from untrusted content (extracted by parser), deny high-impact tools
+            # When tool calls originate from untrusted content, deny outbound and data-mutating actions
             if getattr(request, "source", "user_prompt") == "untrusted_content":
-                if tool_name in ["execute_bash", "send_email", "delete_database", "rotate_encryption_keys"] or canonical_tool in ["execute_bash", "send_email"]:
+                is_destructive_sql = False
+                if tool_name in ["query_database", "query_db"] or canonical_tool in ["query_database", "query_db"]:
+                    sql_text = str(args.get("sql", "") or args.get("query", "")).upper()
+                    if any(kw in sql_text for kw in ["DROP", "DELETE", "UPDATE", "ALTER", "TRUNCATE"]):
+                        is_destructive_sql = True
+
+                if (
+                    tool_name in ["execute_bash", "send_email", "delete_database", "rotate_encryption_keys"]
+                    or canonical_tool in ["execute_bash", "send_email"]
+                    or is_destructive_sql
+                ):
                     return PolicyDecision(
                         call_id=request.call_id,
                         status=DecisionStatus.DENY,
@@ -185,7 +177,7 @@ class PEPGateway:
                         risk_level="CRITICAL",
                         tier=3,
                         reason=f"UNTRUSTED INTENT DENIAL: Tool '{tool_name}' proposed by untrusted document content blocked.",
-                        reasons=["untrusted document content cannot invoke outbound actions"]
+                        reasons=["untrusted document content cannot invoke outbound actions or mutate database"]
                     )
 
             # 5. Rule R-TAINT-01: Multi-Agent Lineage Taint Propagation (Confused Deputy Prevention)
@@ -560,11 +552,11 @@ class PEPGateway:
             self._tainted[agent_id] = time.monotonic() + TAINT_TTL_SECONDS
 
     async def _notify(self, request: ToolRequest, decision: PolicyDecision) -> None:
+        """Broadcasts evaluation preview over WebSockets without writing an immutable audit block."""
         if decision.status == DecisionStatus.ALLOW:
             await self._broadcast("allowed", request, decision)
         elif decision.status == DecisionStatus.DENY:
             await self._broadcast("blocked", request, decision)
-        await self._audit(request, decision)
 
     async def _broadcast(
         self,

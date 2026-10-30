@@ -13,7 +13,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 from app.crypto.signer import tool_signer
 from app.crypto.merkle_log import merkle_ledger
-from app.agent.tools import TOOLS_REGISTRY, ROLE_PERMISSIONS, OUTBOX, clear_outbox
+from app.agent.tools import TOOLS_REGISTRY, OUTBOX, clear_outbox
+from app.pep.policy import ROLE_PERMISSIONS
 from app.state import gateway
 from app.agent.core import AutonomousAgent
 from app.models import ToolRequest

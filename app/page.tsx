@@ -193,7 +193,7 @@ export default function SOCDashboardPage() {
           onSimulateAttack={handleSimulateAttack}
         />
 
-        {/* Tamper-Proof Activity Log (SHA-256 Merkle Chain) */}
+        {/* Tamper-Proof Activity Log (SHA-256 Hash-Chained Audit Ledger) */}
         <div id="audit" className="scroll-mt-20">
           <CryptographicAuditVisualizer />
         </div>

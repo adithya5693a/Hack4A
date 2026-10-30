@@ -9,36 +9,7 @@ from collections import defaultdict, deque
 from typing import Any
 
 from app.models import ToolRequest
-
-# tool_name -> policy tier. Unknown tools fail closed as Tier 3.
-TOOL_TIERS: dict[str, int] = {
-    # Tier 1 — Safe
-    "read_file": 1,
-    "web_search": 1,
-    # Tier 2 — Sensitive
-    "query_db": 2,
-    "send_email": 2,
-    # Tier 3 — Critical
-    "execute_bash": 3,
-    "delete_database": 3,
-}
-
-ADMIN_ONLY_TOOLS: frozenset[str] = frozenset(
-    {
-        "delete_database",
-        "admin_reset",
-        "modify_policy",
-        "grant_permissions",
-    }
-)
-
-ALLOWED_EMAIL_DOMAINS: frozenset[str] = frozenset(
-    {
-        "company.com",
-        "internal.local",
-        "example.com",
-    }
-)
+from app.pep.policy import TOOL_TIERS, ADMIN_ONLY_TOOLS, ALLOWED_EMAIL_DOMAINS
 
 ANOMALY_WINDOW_SECONDS = 10.0
 ANOMALY_CALL_THRESHOLD = 5  # more than this many calls in the window
@@ -121,7 +92,7 @@ def _destructive_sql_anomaly(arguments: dict[str, Any]) -> str | None:
 
 
 def check_permission(request: ToolRequest) -> tuple[bool, int, list[str]]:
-    """Return (allowed, tier, reasons). Anomalies never block; they add reasons."""
+    """Return (allowed, tier, reasons). Unknown tools fail closed as Tier 3 with 'unknown tool' reason."""
     reasons: list[str] = []
     tool_name = request.tool_name
     tier = get_tier(tool_name)

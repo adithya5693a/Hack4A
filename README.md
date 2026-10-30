@@ -1,6 +1,6 @@
 # AgentShield · SOC Dashboard & PEP Gateway
 
-> **Zero-Trust Runtime Policy Enforcement & Cryptographic Merkle Audit for Autonomous AI Agents**
+> **Zero-Trust Runtime Policy Enforcement & Cryptographic SHA-256 Hash-Chained Audit Ledger for Autonomous AI Agents**
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel%20Production-crimson?style=for-the-badge&logo=vercel)](https://agentshield-sooty.vercel.app)
 [![Next.js](https://img.shields.io/badge/Next.js-16%20App%20Router-black?style=for-the-badge&logo=next.js)](https://nextjs.org)
@@ -16,12 +16,12 @@
 
 ## 🛡️ Architecture Overview
 
-AgentShield provides real-time tool traffic interception, permission classification, human-in-the-loop (HITL) approval gates, and a SHA-256 Merkle audit chain for autonomous AI agents.
+AgentShield provides real-time tool traffic interception, permission classification, human-in-the-loop (HITL) approval gates, and a SHA-256 hash-chained audit log for autonomous AI agents.
 
 ### Strict 3-Color Cybernetic Design Palette
-- **Cool Steel Grey** (`#929DA7`): Structural card borders, safe status indicators, telemetry metrics, and immutable Merkle connectors.
+- **Cool Steel Grey** (`#929DA7`): Structural card borders, safe status indicators, telemetry metrics, and immutable audit connectors.
 - **Midnight Charcoal** (`#17191C`): High-contrast dashboard surface, ambient command consoles, and drawer backdrops.
-- **Vibrant Coral Orange** (`#FF4B32`): High-severity threat alerts, red-team exploit triggers, broken Merkle chain alerts, and glowing ambient flares.
+- **Vibrant Coral Orange** (`#FF4B32`): High-severity threat alerts, red-team exploit triggers, broken audit chain alerts, and glowing ambient flares.
 
 ---
 
@@ -33,14 +33,14 @@ Hack4A/
 │   ├── api/                       # Edge Route Handlers
 │   │   ├── agent/run/             # Red-team attack dispatcher
 │   │   ├── approvals/[id]/action/ # HITL approval resolution
-│   │   └── audit/verify/          # Cryptographic Merkle verification
+│   │   └── audit/verify/          # Cryptographic SHA-256 audit verification
 │   ├── globals.css                # Tailwind v4 theme & automotive glow effects
 │   ├── layout.tsx                 # Root layout & Google Fonts
 │   └── page.tsx                   # Main SOC Dashboard view
 ├── components/                    # Modular React components
 │   ├── AestheticHeroBanner.tsx    # "BUILT DIFFERENTLY" editorial hero
 │   ├── AttackPlayground.tsx       # Judges' 1-Click Attack Playground
-│   ├── CryptographicAuditVisualizer.tsx # SHA-256 Merkle Chain Visualizer
+│   ├── CryptographicAuditVisualizer.tsx # SHA-256 Hash-Chained Ledger Visualizer
 │   ├── HITLApprovalModal.tsx      # Risk-aware Human-in-the-Loop approval gate
 │   ├── LiveTelemetryStream.tsx    # Real-time tool execution feed
 │   ├── ManualTestToolbar.tsx      # Quick sandbox trigger bar
@@ -49,7 +49,7 @@ Hack4A/
 │   ├── StatsPanel.tsx             # Blocked / Allowed / Pending metrics
 │   └── StatusBadge.tsx            # High-tech status pills
 ├── hooks/                         # React state & streaming hooks
-│   ├── useAuditChain.ts           # Merkle chain state & tamper simulation
+│   ├── useAuditChain.ts           # Audit chain state & tamper simulation
 │   └── useSecurityStream.ts       # Live WebSocket & mock telemetry engine
 ├── backend/                       # Python FastAPI Backend
 │   ├── app/                       # PEP gateway, RBAC, and risk scorers

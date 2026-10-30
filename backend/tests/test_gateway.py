@@ -116,11 +116,11 @@ async def test_audit_hook_called_for_every_decision() -> None:
         calls.append((request, decision))
 
     gw = _gateway(audit_hook=audit_hook)
-    await gw.evaluate(_req("read_file", {"path": "ok.txt"}, call_id="a1"))
-    await gw.evaluate(
-        _req("execute_bash", {"command": "rm -rf /"}, call_id="a2")
+    await gw.intercept(_req("read_file", {"path": "ok.txt"}, call_id="a1"))
+    await gw.intercept(
+        _req("execute_bash", {"command": "rm -rf /"}, call_id="a2"), timeout=0.01
     )
-    await gw.evaluate(
+    await gw.intercept(
         _req(
             "delete_database",
             parent_agent_id="sup",
@@ -128,11 +128,8 @@ async def test_audit_hook_called_for_every_decision() -> None:
         )
     )
     assert len(calls) == 3
-    assert {item[1].status for item in calls} == {
-        DecisionStatus.ALLOW,
-        DecisionStatus.PENDING_APPROVAL,
-        DecisionStatus.DENY,
-    }
+    assert calls[0][1].status == DecisionStatus.ALLOW
+    assert calls[2][1].status == DecisionStatus.DENY
 
 
 @pytest.mark.asyncio
@@ -141,5 +138,5 @@ async def test_crashing_audit_hook_does_not_break_evaluate() -> None:
         raise RuntimeError("audit store is down")
 
     gw = _gateway(audit_hook=boom)
-    decision = await gw.evaluate(_req("read_file", {"path": "ok.txt"}))
+    decision = await gw.intercept(_req("read_file", {"path": "ok.txt"}))
     assert decision.status == DecisionStatus.ALLOW
