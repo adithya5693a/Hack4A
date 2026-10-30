@@ -59,9 +59,7 @@ export default function AestheticHeroBanner({
 
           {/* Subtext description in plain English */}
           <p className="text-sm sm:text-base text-neutral-300 font-mono font-light leading-relaxed max-w-2xl">
-            AI agents run fast, but they can be tricked into deleting files or stealing data. 
-            AgentShield intercepts dangerous commands before they execute, alerts human supervisors, 
-            and locks every decision into a tamper-proof mathematical log.
+            A fresh take on agentic cyber-defense — where live tool execution telemetry meets real-time human-in-the-loop quarantine and SHA-256 cryptographic chain validation
           </p>
 
           {/* Interactive CTAs */}
