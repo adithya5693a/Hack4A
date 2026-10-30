@@ -13,46 +13,46 @@ export default function ManualTestToolbar({
 }: ManualTestToolbarProps) {
   return (
     <div
-      className="bg-charcoal border border-steel/20 rounded-xl p-3 shadow-[0_4px_20px_rgba(0,0,0,0.8)] flex flex-wrap items-center justify-between gap-3 font-mono"
+      className="bg-charcoal border border-forest rounded-xl p-3 shadow-[0_4px_20px_rgba(6,17,12,0.8)] flex flex-wrap items-center justify-between gap-3 font-mono"
       style={{
-        boxShadow: "0 0 20px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(146, 157, 167, 0.05)",
+        boxShadow: "0 0 20px rgba(6, 17, 12, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.04)",
       }}
     >
       {/* Title & Pipeline Badge */}
       <div className="flex items-center gap-2.5">
-        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-neutral-900 border border-coral/50">
-          <Zap className="h-3.5 w-3.5 text-coral animate-pulse" />
+        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-forest border border-emerald-900/60">
+          <Zap className="h-3.5 w-3.5 text-crimson animate-pulse" />
         </div>
         <div>
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold text-neutral-100 uppercase tracking-wider">
-              Manual Simulation Sandbox
+              Manual Testing Sandbox
             </span>
-            <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-neutral-900 text-steel border border-steel/30">
-              SOC TEST PIPELINE
+            <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-forest text-emerald-400 border border-emerald-900/60">
+              ONE-CLICK DEMO
             </span>
           </div>
-          <p className="text-[10px] text-steel">
-            Instant telemetry injection for live hackathon pitch evaluation
+          <p className="text-[10px] text-neutral-400">
+            Push instant safe or dangerous events to demonstrate guardrail responses
           </p>
         </div>
       </div>
 
       {/* Dual Test Trigger Action Buttons */}
       <div className="flex items-center gap-2.5 w-full sm:w-auto">
-        {/* Button 1: Simulate Safe Event (Cool Steel Grey) */}
+        {/* Button 1: Simulate Safe Event (Forest Green #06110C) */}
         <button
           onClick={onSimulateSafe}
-          className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg font-mono text-xs font-semibold uppercase tracking-wider bg-neutral-900 border border-steel/40 text-steel hover:border-steel hover:text-white active:scale-[0.97] transition-all duration-100 ease-out shadow-[0_0_10px_rgba(0,0,0,0.5)] cursor-pointer"
+          className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg font-mono text-xs font-semibold uppercase tracking-wider bg-forest border border-emerald-900/80 text-emerald-300 hover:border-emerald-700 hover:bg-emerald-950/40 active:scale-[0.97] transition-all duration-100 ease-out shadow-[0_0_12px_rgba(6,17,12,0.6)] cursor-pointer"
         >
-          <CheckCircle className="h-3.5 w-3.5 text-steel" />
+          <CheckCircle className="h-3.5 w-3.5 text-emerald-400" />
           <span>Simulate Safe Event</span>
         </button>
 
-        {/* Button 2: Simulate Tier 3 Attack (Vibrant Coral Orange) */}
+        {/* Button 2: Simulate Tier 3 Attack (Crimson Red #A31C18) */}
         <button
           onClick={onSimulateAttack}
-          className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg font-mono text-xs font-bold uppercase tracking-wider bg-coral text-white hover:bg-[#ff351a] active:scale-[0.97] transition-all duration-100 ease-out border border-coral/80 shadow-[0_0_15px_rgba(255,75,50,0.5)] cursor-pointer"
+          className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg font-mono text-xs font-bold uppercase tracking-wider bg-crimson text-white hover:bg-red-800 active:scale-[0.97] transition-all duration-100 ease-out border border-red-500/60 shadow-[0_0_15px_rgba(163,28,24,0.5)] cursor-pointer"
         >
           <ShieldAlert className="h-3.5 w-3.5 text-white" />
           <span>Simulate Tier 3 Attack</span>
