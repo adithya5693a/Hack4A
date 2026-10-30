@@ -1,9 +1,13 @@
 @import "tailwindcss";
 
 @theme {
-  --color-charcoal: #171717;
-  --color-forest: #06110c;
-  --color-crimson: #a31c18;
+  --color-charcoal: #17191c;
+  --color-steel: #929da7;
+  --color-coral: #ff4b32;
+
+  /* Aliases for semantic palette consistency */
+  --color-forest: #1e2328;
+  --color-crimson: #ff4b32;
 
   --font-serif: "Playfair Display", "Cinzel", Georgia, serif;
   --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
@@ -13,34 +17,37 @@
 }
 
 :root {
-  --charcoal: #171717;
-  --forest: #06110c;
-  --crimson: #a31c18;
+  --charcoal: #17191c;
+  --steel: #929da7;
+  --coral: #ff4b32;
+  --forest: #1e2328;
+  --crimson: #ff4b32;
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 html, body {
   overscroll-behavior: none;
   -webkit-tap-highlight-color: transparent;
-  background-color: #171717;
+  background-color: #17191c;
   color: #ededed;
   font-family: var(--font-geist-mono), "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 /* Subtle luxury cybernetic mesh background */
 .soc-mesh-grid {
-  background-image: linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-                    linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-image: linear-gradient(to right, rgba(146, 157, 167, 0.04) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(146, 157, 167, 0.04) 1px, transparent 1px);
   background-size: 48px 48px;
 }
 
-/* Cinematic Crimson Rear-Light Flare (Inspired by Automotive Reference) */
-.crimson-ambient-flare {
-  background: radial-gradient(circle at 75% 25%, rgba(163, 28, 24, 0.22) 0%, rgba(163, 28, 24, 0.08) 35%, transparent 70%);
+/* Vibrant Coral Orange Ambient Flare */
+.coral-ambient-flare {
+  background: radial-gradient(circle at 75% 25%, rgba(255, 75, 50, 0.22) 0%, rgba(255, 75, 50, 0.08) 35%, transparent 70%);
 }
 
-.forest-ambient-depth {
-  background: radial-gradient(circle at 20% 85%, rgba(6, 17, 12, 0.95) 0%, rgba(6, 17, 12, 0.5) 45%, transparent 75%);
+/* Cool Steel Grey Ambient Depth */
+.steel-ambient-depth {
+  background: radial-gradient(circle at 20% 85%, rgba(146, 157, 167, 0.16) 0%, rgba(23, 25, 28, 0.85) 45%, transparent 75%);
 }
 
 /* Luxury Editorial Serif Headline */
@@ -57,24 +64,24 @@ button:active {
   transform: scale(0.97);
 }
 
-/* High-tech SOC scrollbar */
+/* High-tech SOC scrollbar in Vibrant Coral Orange & Cool Steel */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(163, 28, 24, 0.35) transparent;
+  scrollbar-color: rgba(255, 75, 50, 0.4) transparent;
 }
 *::-webkit-scrollbar {
   width: 5px;
   height: 5px;
 }
 *::-webkit-scrollbar-track {
-  background: rgba(6, 17, 12, 0.6);
+  background: rgba(23, 25, 28, 0.8);
 }
 *::-webkit-scrollbar-thumb {
-  background: rgba(163, 28, 24, 0.35);
+  background: rgba(255, 75, 50, 0.4);
   border-radius: 4px;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background: rgba(163, 28, 24, 0.7);
+  background: rgba(255, 75, 50, 0.8);
 }
 
 /* Animations */
@@ -96,11 +103,11 @@ button:active {
 @keyframes pulseGlow {
   0%, 100% {
     opacity: 1;
-    filter: drop-shadow(0 0 6px currentColor);
+    filter: drop-shadow(0 0 8px currentColor);
   }
   50% {
-    opacity: 0.4;
-    filter: drop-shadow(0 0 2px currentColor);
+    opacity: 0.45;
+    filter: drop-shadow(0 0 3px currentColor);
   }
 }
 

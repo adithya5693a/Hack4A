@@ -18,10 +18,10 @@
 
 AgentShield provides real-time tool traffic interception, permission classification, human-in-the-loop (HITL) approval gates, and a SHA-256 Merkle audit chain for autonomous AI agents.
 
-### Strict 3-Color SOC Palette
-- **Charcoal Black** (`#171717`): Surfaces, command cards, and background mesh.
-- **Forest Green** (`#06110C`): Safe executions, verified Merkle connectors, and active policy indicators.
-- **Crimson Red** (`#A31C18`): High-severity threats, broken chain tamper alerts, and red-team exploit triggers.
+### Strict 3-Color Cybernetic Design Palette
+- **Cool Steel Grey** (`#929DA7`): Structural card borders, safe status indicators, telemetry metrics, and immutable Merkle connectors.
+- **Midnight Charcoal** (`#17191C`): High-contrast dashboard surface, ambient command consoles, and drawer backdrops.
+- **Vibrant Coral Orange** (`#FF4B32`): High-severity threat alerts, red-team exploit triggers, broken Merkle chain alerts, and glowing ambient flares.
 
 ---
 

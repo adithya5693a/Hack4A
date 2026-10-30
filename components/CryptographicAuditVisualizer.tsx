@@ -32,12 +32,12 @@ export default function CryptographicAuditVisualizer() {
     if (res.valid) {
       toast.success("Chain Integrity Verified", {
         description: "All 5 SHA-256 Merkle hashes match cryptographically.",
-        icon: <CheckCircle2 className="h-4 w-4 text-emerald-400" />,
+        icon: <CheckCircle2 className="h-4 w-4 text-steel" />,
       });
     } else {
       toast.error("Cryptographic Tamper Alert", {
         description: res.message,
-        icon: <AlertTriangle className="h-4 w-4 text-crimson" />,
+        icon: <AlertTriangle className="h-4 w-4 text-coral" />,
       });
     }
   };
@@ -47,12 +47,12 @@ export default function CryptographicAuditVisualizer() {
     if (!isTampered) {
       toast.error("Data Tampering Simulated", {
         description: "Block #02 payload mutated. Cryptographic hash chain broken.",
-        icon: <Link2Off className="h-4 w-4 text-crimson" />,
+        icon: <Link2Off className="h-4 w-4 text-coral" />,
       });
     } else {
       toast.success("Chain Restored", {
         description: "Original hash signature reinstated. Chain verified.",
-        icon: <ShieldCheck className="h-4 w-4 text-emerald-400" />,
+        icon: <ShieldCheck className="h-4 w-4 text-steel" />,
       });
     }
   };
@@ -64,32 +64,32 @@ export default function CryptographicAuditVisualizer() {
 
   return (
     <div
-      className="bg-charcoal border border-forest rounded-xl p-4 shadow-[0_4px_25px_rgba(6,17,12,0.9)] font-mono relative overflow-hidden"
+      className="bg-charcoal border border-steel/20 rounded-xl p-4 shadow-[0_4px_25px_rgba(0,0,0,0.8)] font-mono relative overflow-hidden"
       style={{
-        boxShadow: "0 0 25px rgba(6, 17, 12, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.03)",
+        boxShadow: "0 0 25px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(146, 157, 167, 0.05)",
       }}
     >
       {/* Background ambient glow based on chain state */}
       <div
         className={`absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl pointer-events-none transition-colors duration-300 ${
-          isTampered ? "bg-crimson/15" : "bg-forest opacity-80"
+          isTampered ? "bg-coral/20" : "bg-steel/10"
         }`}
       />
 
       {/* Header & Controls Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-neutral-800/80">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-steel/20">
         <div className="flex items-center gap-2.5">
           <div
             className={`flex h-8 w-8 items-center justify-center rounded-lg border transition-colors duration-150 ${
               isTampered
-                ? "bg-crimson/20 border-crimson text-crimson shadow-[0_0_12px_rgba(163,28,24,0.4)]"
-                : "bg-forest border-emerald-900/70 text-emerald-400 shadow-[0_0_12px_rgba(6,17,12,0.8)]"
+                ? "bg-coral/20 border-coral text-coral shadow-[0_0_15px_rgba(255,75,50,0.4)]"
+                : "bg-neutral-900 border-steel/40 text-steel shadow-[0_0_15px_rgba(146,157,167,0.2)]"
             }`}
           >
             {isTampered ? (
-              <Link2Off className="h-4 w-4 text-crimson animate-pulse" />
+              <Link2Off className="h-4 w-4 text-coral animate-pulse" />
             ) : (
-              <Layers className="h-4 w-4 text-emerald-400" />
+              <Layers className="h-4 w-4 text-steel" />
             )}
           </div>
           <div>
@@ -97,11 +97,11 @@ export default function CryptographicAuditVisualizer() {
               <h3 className="text-xs font-bold text-neutral-100 uppercase tracking-wider">
                 Cryptographic Audit Visualizer
               </h3>
-              <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-neutral-900 text-neutral-400 border border-neutral-800 uppercase">
+              <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-neutral-900 text-steel border border-steel/30 uppercase">
                 SHA-256 Merkle Chain
               </span>
             </div>
-            <p className="text-[10px] text-neutral-400 mt-0.5">
+            <p className="text-[10px] text-steel mt-0.5">
               Immutable ledger securing all AI agent tool invocations against unauthorized mutation.
             </p>
           </div>
@@ -115,8 +115,8 @@ export default function CryptographicAuditVisualizer() {
             disabled={isVerifying}
             className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider active:scale-[0.97] transition-all duration-100 ease-out cursor-pointer disabled:opacity-60 ${
               verificationResult.valid
-                ? "bg-forest border border-emerald-800/90 text-emerald-300 hover:border-emerald-600 hover:bg-emerald-950/40 shadow-[0_0_12px_rgba(6,17,12,0.8)]"
-                : "bg-crimson/20 border border-crimson text-red-200 hover:bg-crimson/30 shadow-[0_0_12px_rgba(163,28,24,0.3)]"
+                ? "bg-neutral-900 border border-steel/40 text-steel hover:border-steel hover:text-white shadow-[0_0_12px_rgba(0,0,0,0.5)]"
+                : "bg-coral/20 border border-coral text-coral hover:bg-coral/30 shadow-[0_0_15px_rgba(255,75,50,0.35)]"
             }`}
           >
             {isVerifying ? (
@@ -126,19 +126,19 @@ export default function CryptographicAuditVisualizer() {
               </>
             ) : verificationResult.valid ? (
               <>
-                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                <CheckCircle2 className="h-3.5 w-3.5 text-steel" />
                 <span>Verify Integrity</span>
               </>
             ) : (
               <>
-                <ShieldAlert className="h-3.5 w-3.5 text-crimson" />
+                <ShieldAlert className="h-3.5 w-3.5 text-coral" />
                 <span>Verify Integrity</span>
               </>
             )}
           </button>
 
           {/* Switch / Toggle: Simulate Data Tampering */}
-          <label className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-neutral-900 border border-neutral-800 hover:border-neutral-700 cursor-pointer select-none active:scale-[0.97] transition-all duration-100">
+          <label className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-neutral-900 border border-steel/25 hover:border-steel/60 cursor-pointer select-none active:scale-[0.97] transition-all duration-100">
             <span className="text-[11px] font-semibold text-neutral-300">
               Simulate Data Tampering
             </span>
@@ -149,7 +149,7 @@ export default function CryptographicAuditVisualizer() {
                 onChange={handleToggleTampering}
                 className="sr-only peer"
               />
-              <div className="w-8 h-4 bg-neutral-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-crimson shadow-[inset_0_1px_3px_rgba(0,0,0,0.5)]" />
+              <div className="w-8 h-4 bg-neutral-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-coral shadow-[inset_0_1px_3px_rgba(0,0,0,0.5)]" />
             </div>
           </label>
         </div>
@@ -157,26 +157,26 @@ export default function CryptographicAuditVisualizer() {
 
       {/* Alert Banner When Tamper Detected or Valid Banner */}
       {isTampered ? (
-        <div className="mb-4 p-2.5 rounded-lg bg-crimson/20 border border-crimson text-red-200 flex items-center justify-between text-xs animate-[slideDownIn_180ms_cubic-bezier(0.23,1,0.32,1)] shadow-[0_0_18px_rgba(163,28,24,0.35)]">
+        <div className="mb-4 p-2.5 rounded-lg bg-coral/20 border border-coral text-red-100 flex items-center justify-between text-xs animate-[slideDownIn_180ms_cubic-bezier(0.23,1,0.32,1)] shadow-[0_0_20px_rgba(255,75,50,0.35)]">
           <div className="flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-crimson flex-shrink-0 animate-pulse" />
-            <span className="font-bold tracking-wide uppercase text-red-100">
+            <AlertTriangle className="h-4 w-4 text-coral flex-shrink-0 animate-pulse" />
+            <span className="font-bold tracking-wide uppercase text-white">
               TAMPER DETECTED: Hash mismatch at Block #02
             </span>
           </div>
-          <span className="text-[10px] bg-crimson px-2 py-0.5 rounded text-white font-bold tracking-wider uppercase">
+          <span className="text-[10px] bg-coral px-2.5 py-0.5 rounded text-white font-bold tracking-wider uppercase shadow-[0_0_8px_rgba(255,75,50,0.6)]">
             CHAIN BROKEN
           </span>
         </div>
       ) : (
-        <div className="mb-4 p-2 rounded-lg bg-forest border border-emerald-900/60 text-emerald-400 flex items-center justify-between text-xs">
+        <div className="mb-4 p-2 rounded-lg bg-neutral-900/90 border border-steel/30 text-steel flex items-center justify-between text-xs">
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 flex-shrink-0" />
-            <span className="font-semibold tracking-wide">
+            <CheckCircle2 className="h-3.5 w-3.5 text-steel flex-shrink-0" />
+            <span className="font-semibold tracking-wide text-neutral-200">
               Integrity Verified: Chain Valid (5 Blocks Consistent)
             </span>
           </div>
-          <span className="text-[10px] text-emerald-500 font-mono">
+          <span className="text-[10px] text-steel font-mono">
             Zero Discrepancies
           </span>
         </div>
@@ -196,10 +196,10 @@ export default function CryptographicAuditVisualizer() {
                 <div
                   className={`w-64 rounded-xl p-3 border font-mono transition-all duration-150 relative ${
                     isBlockTampered
-                      ? "bg-charcoal border-2 border-crimson shadow-[0_0_20px_rgba(163,28,24,0.4)]"
+                      ? "bg-charcoal border-2 border-coral shadow-[0_0_25px_rgba(255,75,50,0.4)]"
                       : isInvalidFromHere
-                      ? "bg-charcoal border border-crimson/70 shadow-[0_0_12px_rgba(163,28,24,0.2)]"
-                      : "bg-charcoal border border-forest hover:border-emerald-900/80 shadow-[0_0_15px_rgba(6,17,12,0.8)]"
+                      ? "bg-charcoal border border-coral/70 shadow-[0_0_15px_rgba(255,75,50,0.25)]"
+                      : "bg-charcoal border border-steel/25 hover:border-steel/60 shadow-[0_0_15px_rgba(0,0,0,0.6)]"
                   }`}
                 >
                   {/* Top: Block ID & Timestamp */}
@@ -208,18 +208,18 @@ export default function CryptographicAuditVisualizer() {
                       <span
                         className={`text-xs font-bold px-1.5 py-0.5 rounded ${
                           isBlockTampered || isInvalidFromHere
-                            ? "bg-crimson text-white"
-                            : "bg-forest border border-emerald-900/60 text-emerald-400"
+                            ? "bg-coral text-white"
+                            : "bg-neutral-900 border border-steel/30 text-steel"
                         }`}
                       >
                         {block.block_id}
                       </span>
-                      <span className="text-[10px] text-neutral-400">
+                      <span className="text-[10px] text-steel">
                         {block.agent_id}
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-1 text-[10px] text-neutral-500">
+                    <div className="flex items-center gap-1 text-[10px] text-steel/70">
                       <Clock className="h-2.5 w-2.5" />
                       <span>{block.timestamp}</span>
                     </div>
@@ -227,13 +227,13 @@ export default function CryptographicAuditVisualizer() {
 
                   {/* Logged Action Preview */}
                   <div className="mb-2.5">
-                    <span className="text-[9px] uppercase tracking-wider text-neutral-500 block">
+                    <span className="text-[9px] uppercase tracking-wider text-steel block">
                       Logged Action
                     </span>
                     <p
                       className={`text-xs font-semibold truncate ${
                         isBlockTampered || isInvalidFromHere
-                          ? "text-red-200"
+                          ? "text-coral"
                           : "text-neutral-200"
                       }`}
                       title={block.action}
@@ -243,8 +243,8 @@ export default function CryptographicAuditVisualizer() {
                   </div>
 
                   {/* Hash Signatures Box */}
-                  <div className="space-y-1 p-2 rounded bg-neutral-950/90 border border-neutral-800 text-[10px]">
-                    <div className="flex items-center justify-between text-neutral-500">
+                  <div className="space-y-1 p-2 rounded bg-neutral-950/90 border border-steel/15 text-[10px]">
+                    <div className="flex items-center justify-between text-steel">
                       <span>PREV HASH:</span>
                       <span className="font-mono text-neutral-400">
                         {truncateHash(block.prev_hash)}
@@ -252,14 +252,14 @@ export default function CryptographicAuditVisualizer() {
                     </div>
 
                     <div className="flex items-center justify-between">
-                      <span className="text-neutral-500">CURRENT:</span>
+                      <span className="text-steel">CURRENT:</span>
                       <span
                         className={`font-mono font-bold ${
                           isBlockTampered
-                            ? "text-crimson animate-pulse"
+                            ? "text-coral animate-pulse"
                             : isInvalidFromHere
-                            ? "text-red-300"
-                            : "text-emerald-400"
+                            ? "text-coral/80"
+                            : "text-steel"
                         }`}
                       >
                         {truncateHash(block.current_hash)}
@@ -269,12 +269,12 @@ export default function CryptographicAuditVisualizer() {
 
                   {/* Tampered Indicator Tag */}
                   {isBlockTampered && (
-                    <div className="mt-2 text-center text-[9px] font-bold text-red-200 bg-crimson/30 py-0.5 rounded border border-crimson/50 uppercase tracking-wider">
+                    <div className="mt-2 text-center text-[9px] font-bold text-white bg-coral/30 py-0.5 rounded border border-coral/60 uppercase tracking-wider">
                       MUTATED PAYLOAD
                     </div>
                   )}
                   {!isBlockTampered && isInvalidFromHere && (
-                    <div className="mt-2 text-center text-[9px] font-semibold text-red-300/80 bg-crimson/10 py-0.5 rounded border border-crimson/30 uppercase tracking-wider">
+                    <div className="mt-2 text-center text-[9px] font-semibold text-coral/90 bg-coral/10 py-0.5 rounded border border-coral/30 uppercase tracking-wider">
                       INVALID PREV HASH LINK
                     </div>
                   )}
@@ -286,15 +286,15 @@ export default function CryptographicAuditVisualizer() {
                     <div
                       className={`h-0.5 w-6 transition-colors duration-150 ${
                         blocks[idx + 1].invalid_from_here
-                          ? "bg-crimson shadow-[0_0_8px_rgba(163,28,24,0.6)]"
-                          : "bg-forest border-b border-emerald-900/60"
+                          ? "bg-coral shadow-[0_0_8px_rgba(255,75,50,0.6)]"
+                          : "bg-neutral-800 border-b border-steel/30"
                       }`}
                     />
                     <ArrowRight
                       className={`h-3 w-3 -ml-1 flex-shrink-0 transition-colors duration-150 ${
                         blocks[idx + 1].invalid_from_here
-                          ? "text-crimson"
-                          : "text-emerald-600/70"
+                          ? "text-coral"
+                          : "text-steel/60"
                       }`}
                     />
                   </div>

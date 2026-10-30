@@ -22,10 +22,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${geistMono.variable} dark h-full bg-[#171717] antialiased`}>
+    <html lang="en" className={`${geistMono.variable} dark h-full bg-[#17191C] antialiased`}>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-        <meta name="theme-color" content="#171717" />
+        <meta name="theme-color" content="#17191C" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
@@ -40,11 +40,11 @@ export default function RootLayout({
           theme="dark"
           toastOptions={{
             style: {
-              background: "#171717",
-              border: "1px solid #06110C",
+              background: "#17191C",
+              border: "1px solid rgba(146, 157, 167, 0.25)",
               color: "#ededed",
               fontFamily: "var(--font-geist-mono), monospace",
-              boxShadow: "0 0 20px rgba(0, 0, 0, 0.8)",
+              boxShadow: "0 0 25px rgba(0, 0, 0, 0.8), 0 0 15px rgba(255, 75, 50, 0.15)",
             },
           }}
         />

@@ -129,51 +129,51 @@ export default function AttackPlayground({ onAttackDispatched }: AttackPlaygroun
   const getScenarioIcon = (id: string) => {
     switch (id) {
       case "poisoned_invoice":
-        return <FileText className="h-4 w-4 text-crimson" />;
+        return <FileText className="h-4 w-4 text-coral" />;
       case "shell_escape":
-        return <Terminal className="h-4 w-4 text-crimson" />;
+        return <Terminal className="h-4 w-4 text-coral" />;
       case "privilege_escalation":
-        return <Coins className="h-4 w-4 text-crimson" />;
+        return <Coins className="h-4 w-4 text-coral" />;
       case "tool_schema_tampering":
-        return <Cpu className="h-4 w-4 text-crimson" />;
+        return <Cpu className="h-4 w-4 text-coral" />;
       default:
-        return <Skull className="h-4 w-4 text-crimson" />;
+        return <Skull className="h-4 w-4 text-coral" />;
     }
   };
 
   return (
     <div
-      className="bg-charcoal border border-forest rounded-xl p-4 shadow-[0_4px_25px_rgba(6,17,12,0.9)] font-mono relative overflow-hidden"
+      className="bg-charcoal border border-steel/20 rounded-xl p-4 shadow-[0_4px_25px_rgba(0,0,0,0.8)] font-mono relative overflow-hidden"
       style={{
-        boxShadow: "0 0 25px rgba(6, 17, 12, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.03)",
+        boxShadow: "0 0 25px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(146, 157, 167, 0.05)",
       }}
     >
-      {/* Decorative Red Threat Indicator Flare */}
-      <div className="absolute top-0 right-0 w-48 h-48 bg-crimson/10 rounded-full blur-2xl pointer-events-none" />
+      {/* Decorative Coral Threat Indicator Flare */}
+      <div className="absolute top-0 right-0 w-48 h-48 bg-coral/15 rounded-full blur-2xl pointer-events-none" />
 
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-2 mb-3 pb-2.5 border-b border-neutral-800/80">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-3 pb-2.5 border-b border-steel/20">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-forest border border-crimson/50 shadow-[0_0_10px_rgba(163,28,24,0.3)]">
-            <Flame className="h-4 w-4 text-crimson animate-pulse" />
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-neutral-900 border border-coral/50 shadow-[0_0_12px_rgba(255,75,50,0.35)]">
+            <Flame className="h-4 w-4 text-coral animate-pulse" />
           </div>
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-xs font-bold text-neutral-100 uppercase tracking-wider">
                 Judges' 1-Click Attack Playground
               </h3>
-              <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-crimson/20 text-red-300 border border-crimson/40 uppercase">
+              <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-coral/15 text-coral border border-coral/40 uppercase">
                 Red-Team Lab
               </span>
             </div>
-            <p className="text-[10px] text-neutral-400 mt-0.5">
+            <p className="text-[10px] text-steel mt-0.5">
               Simulate live red-team exploits to demonstrate real-time policy interception.
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 text-[10px] text-neutral-500">
-          <Radio className="h-3 w-3 text-crimson animate-pulse" />
+        <div className="flex items-center gap-1.5 text-[10px] text-steel">
+          <Radio className="h-3 w-3 text-coral animate-pulse" />
           <span>PAYLOAD READY</span>
         </div>
       </div>
@@ -187,37 +187,37 @@ export default function AttackPlayground({ onAttackDispatched }: AttackPlaygroun
           return (
             <div
               key={scenario.id}
-              className="group bg-neutral-900/90 border border-neutral-800 rounded-xl p-3.5 flex flex-col justify-between hover:border-crimson/80 hover:shadow-[0_0_25px_rgba(163,28,24,0.25)] transition-all duration-150 relative overflow-hidden"
+              className="group bg-neutral-900/90 border border-steel/20 rounded-xl p-3.5 flex flex-col justify-between hover:border-coral/80 hover:shadow-[0_0_25px_rgba(255,75,50,0.25)] transition-all duration-150 relative overflow-hidden"
               style={{
-                boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.03)",
+                boxShadow: "inset 0 1px 0 rgba(146, 157, 167, 0.05)",
               }}
             >
               {/* Subtle top index watermark */}
-              <div className="absolute top-2 right-2 text-[10px] font-mono font-bold text-neutral-400 group-hover:text-red-400 transition-colors">
+              <div className="absolute top-2 right-2 text-[10px] font-mono font-bold text-steel group-hover:text-coral transition-colors">
                 //{indexFormatted}
               </div>
 
               {/* Card Meta */}
               <div>
                 <div className="flex items-center gap-1.5 mb-2 pr-6">
-                  <div className="p-1 rounded bg-charcoal border border-neutral-800 group-hover:border-crimson/50 transition-colors">
+                  <div className="p-1 rounded bg-charcoal border border-steel/20 group-hover:border-coral/50 transition-colors">
                     {getScenarioIcon(scenario.id)}
                   </div>
-                  <span className="text-xs font-bold text-neutral-100 group-hover:text-red-200 transition-colors">
+                  <span className="text-xs font-bold text-neutral-100 group-hover:text-coral transition-colors">
                     {scenario.name}
                   </span>
                 </div>
 
                 <div className="flex items-center gap-1.5 mb-2">
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-crimson/20 border border-crimson/50 text-red-300 uppercase tracking-tight">
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-coral/15 border border-coral/40 text-coral uppercase tracking-tight">
                     {scenario.badge}
                   </span>
-                  <span className="text-[10px] text-neutral-400 font-bold">
+                  <span className="text-[10px] text-steel font-bold">
                     {scenario.risk_score}% Risk
                   </span>
                 </div>
 
-                <p className="text-[11px] text-neutral-400 leading-snug line-clamp-2 mb-3">
+                <p className="text-[11px] text-steel leading-snug line-clamp-2 mb-3">
                   {scenario.subtext}
                 </p>
               </div>
@@ -226,7 +226,7 @@ export default function AttackPlayground({ onAttackDispatched }: AttackPlaygroun
               <button
                 onClick={() => handleLaunchAttack(scenario)}
                 disabled={isDeploying}
-                className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-bold uppercase tracking-wider bg-crimson text-white hover:bg-red-800 active:scale-[0.97] transition-all duration-150 ease-out border border-red-500/70 shadow-[0_0_15px_rgba(163,28,24,0.4)] disabled:opacity-60 cursor-pointer"
+                className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-bold uppercase tracking-wider bg-coral text-white hover:bg-[#ff351a] active:scale-[0.97] transition-all duration-150 ease-out border border-coral/80 shadow-[0_0_15px_rgba(255,75,50,0.4)] disabled:opacity-60 cursor-pointer"
               >
                 {isDeploying ? (
                   <>
