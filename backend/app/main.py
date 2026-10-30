@@ -160,6 +160,7 @@ def get_metrics():
         approvals_required=m["approvals_required"],
         approvals_granted=m["approvals_granted"],
         approvals_rejected=m["approvals_rejected"],
+        approvals_timeout=m.get("approvals_timeout", 0),
         chain_integrity=integrity
     )
 
@@ -325,26 +326,31 @@ app.include_router(mcp_router)
 
 @app.get("/api/benchmark/summary")
 def get_benchmark_summary():
-    """Real-time sub-millisecond latency profile & security efficacy metrics."""
+    """Live dynamic security efficacy and ledger metrics computed from runtime state."""
     integrity = merkle_ledger.verify_integrity().is_valid
+    m = agentshield_gw.metrics
+    attacks_run = m["attacks_run"]
+    attacks_blocked = m["attacks_blocked_shield_on"]
+    detection_pct = f"{(attacks_blocked / attacks_run * 100):.1f}%" if attacks_run > 0 else "N/A"
+    fp_pct = f"{(m['false_blocks'] / m['legitimate_tasks_run'] * 100):.1f}%" if m["legitimate_tasks_run"] > 0 else "0.0%"
+
     return {
         "framework": "AgentShield Policy Enforcement Point",
         "mcp_compliance": "Anthropic Model Context Protocol JSON-RPC 2.0",
-        "performance_profile": {
-            "latency_p50_ms": 0.42,
-            "latency_p90_ms": 0.85,
-            "latency_p99_ms": 1.95,
-            "evaluation_engine": "Deterministic compiled regex & zero-copy AST"
-        },
-        "efficacy": {
-            "attack_detection_rate": "100.0%",
-            "adversarial_bypasses": 0,
-            "false_positive_rate": "0.0%",
-            "fail_closed_guarantee": True
+        "live_metrics": {
+            "attacks_executed": attacks_run,
+            "attacks_intercepted": attacks_blocked,
+            "attack_detection_rate": detection_pct,
+            "false_positive_rate": fp_pct,
+            "fail_closed_guarantee": True,
+            "approvals_required": m["approvals_required"],
+            "approvals_granted": m["approvals_granted"],
+            "approvals_rejected": m["approvals_rejected"],
+            "approvals_timeout": m.get("approvals_timeout", 0)
         },
         "cryptographic_ledger": {
             "status": "VERIFIED" if integrity else "CORRUPTED",
             "total_blocks": len(merkle_ledger.chain),
-            "tamper_detection": "SHA-256 Hash Chained with HMAC-SHA256 Tool Manifest Signatures"
+            "tamper_detection": "SHA-256 Hash Chained Audit Ledger with HMAC-SHA256 Tool Manifest Signatures"
         }
     }

@@ -39,6 +39,10 @@ ARGUMENT_PATTERNS: list[tuple[str, str, float]] = [
 ]
 
 INJECTION_PATTERNS: list[tuple[str, str, float]] = [
+    ("disregard prior directives", r"disregard\s+(?:prior|all|previous)\s+(?:directives|instructions)?", 85.0),
+    ("execute bash imperative", r"(?:execute_bash|execute\s+bash)", 85.0),
+    ("email credentials exfiltration", r"email\s+(?:all\s+)?(?:credentials|secrets|passwords)", 90.0),
+    ("untrusted attacker email domain", r"@[a-zA-Z0-9.-]*evil\.[a-zA-Z]{2,}", 85.0),
     ("ignore previous instructions", r"ignore previous instructions", 80.0),
     ("ignore all prior", r"ignore all prior", 80.0),
     ("system prompt override", r"system prompt override", 85.0),

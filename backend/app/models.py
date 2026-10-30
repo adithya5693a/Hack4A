@@ -27,6 +27,7 @@ class ToolRequest(BaseModel):
     timestamp: float = Field(default_factory=time.time)
     originating_prompt_hash: Optional[str] = None
     tainted: bool = False
+    source: Literal["user_prompt", "untrusted_content", "trusted_content"] = "user_prompt"
 
 
 class PolicyDecision(BaseModel):
@@ -136,4 +137,5 @@ class SystemMetrics(BaseModel):
     approvals_required: int = 0
     approvals_granted: int = 0
     approvals_rejected: int = 0
+    approvals_timeout: int = 0
     chain_integrity: bool = True

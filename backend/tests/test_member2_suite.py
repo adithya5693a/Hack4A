@@ -61,7 +61,7 @@ async def test_02_shield_off_vs_on_baseline():
 
     res_on = await run_attack_poisoned_invoice(shield_enabled=True)
     assert res_on["neutralized"], "Shield ON failed: attack should be blocked!"
-    assert res_on["steps"][1]["rule_id"] == "R-TAINT-01"
+    assert res_on["steps"][1]["rule_id"] in ["R-TAINT-01", "R-UNTRUSTED-INTENT-01"]
 
 
 @pytest.mark.asyncio

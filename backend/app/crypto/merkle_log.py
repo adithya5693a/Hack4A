@@ -1,7 +1,7 @@
 """
-AGENTSHIELD Tamper-Evident SHA-256 Hash-Chained Audit Ledger (Extension 4)
+AGENTSHIELD Tamper-Evident SHA-256 Hash-Chained Audit Ledger
 Cryptographic Audit Trail with Rule IDs, Lineage Tracking, Redacted Arguments Preview,
-and Mathematical Integrity Verification
+and Mathematical Integrity Verification (Single audit write path).
 """
 
 import hashlib
@@ -18,7 +18,6 @@ def make_args_preview(args: Dict[str, Any], max_len: int = 80) -> str:
     """Creates a redacted arguments preview <= 80 characters with secrets masked."""
     try:
         raw = json.dumps(args, sort_keys=True)
-        # Mask secrets
         masked = re.sub(
             r'(password|key|token|secret|credential)["\']?\s*:\s*["\']?[^"\',}\s]+',
             r'\1: "***"',
@@ -32,7 +31,9 @@ def make_args_preview(args: Dict[str, Any], max_len: int = 80) -> str:
         return "{}"
 
 
-class TamperEvidentAuditLedger:
+class HashChainAuditLedger:
+    """Immutable SHA-256 hash-chained log linking each decision block to the previous hash."""
+
     def __init__(self):
         self.chain: List[AuditBlock] = []
         self._create_genesis_block()
@@ -90,14 +91,14 @@ class TamperEvidentAuditLedger:
         return self._hash_payload(raw)
 
     def record_event(self, request: ToolRequest, decision: PolicyDecision) -> AuditBlock:
-        """Appends a new immutable block to the cryptographic chain."""
+        """Appends a new immutable block to the cryptographic chain. Called solely by the PEP."""
         prev_block = self.chain[-1]
         args_json = json.dumps(request.arguments, sort_keys=True)
         args_hash = self._hash_payload(args_json)
         preview = make_args_preview(request.arguments, max_len=80)
         new_index = len(self.chain)
 
-        dec_str = decision.status.value if hasattr(decision.status, 'value') else str(decision.status)
+        dec_str = decision.status.value if hasattr(decision.status, "value") else str(decision.status)
         block_hash = self._calculate_block_hash(
             index=new_index,
             timestamp=decision.timestamp,
@@ -122,9 +123,9 @@ class TamperEvidentAuditLedger:
             args_preview=preview,
             decision=dec_str,
             rule_id=decision.rule_id,
-            reason=decision.reason,
+            reason=decision.reason or (decision.reasons[0] if decision.reasons else ""),
             risk_score=decision.risk_score,
-            risk_level=decision.risk_level,
+            risk_level=getattr(decision, "risk_level", "LOW"),
             previous_hash=prev_block.block_hash,
             block_hash=block_hash
         )
@@ -188,4 +189,6 @@ class TamperEvidentAuditLedger:
         self._create_genesis_block()
 
 
-merkle_ledger = TamperEvidentAuditLedger()
+# Global audit ledger singleton
+merkle_ledger = HashChainAuditLedger()
+TamperEvidentAuditLedger = HashChainAuditLedger  # Backwards compatibility alias

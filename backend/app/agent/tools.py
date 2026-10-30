@@ -5,6 +5,7 @@ All operations and tools are 100% SIMULATED (no real filesystem, network, or sub
 
 from typing import Dict, Any, List, Optional
 from app.crypto.signer import tool_signer
+from app.pep.policy import AGENT_REGISTRY
 
 # -------------------------------------------------------------
 # 1. Virtual Files with Provenance Trust Labels
@@ -50,20 +51,7 @@ VIRTUAL_FILES: Dict[str, Dict[str, Any]] = {
 # -------------------------------------------------------------
 # 2. Server-Side Agent Registry (No Client Role Spoofing)
 # -------------------------------------------------------------
-AGENT_REGISTRY: Dict[str, Dict[str, Any]] = {
-    "SYSTEM_ROOT": {"role": "system", "parent": None},
-    "agent_admin": {"role": "admin", "parent": None},
-    "agent_operator_sysadmin": {"role": "operator", "parent": "agent_admin"},
-    "agent_ops_intern": {"role": "operator", "parent": "agent_admin"},
-    "agent_worker_finance": {"role": "finance", "parent": "agent_supervisor_accounting"},
-    "agent_supervisor_accounting": {"role": "finance", "parent": "agent_admin"},
-    "agent_worker_support": {"role": "worker", "parent": "agent_supervisor_root"},
-    "agent_worker_01": {"role": "worker", "parent": "agent_supervisor_root"},
-    "agent_supervisor_root": {"role": "worker", "parent": "agent_admin"},
-    "agent_untrusted_marketing": {"role": "worker", "parent": "agent_supervisor_root"},
-    "agent_shadow_test": {"role": "worker", "parent": "agent_supervisor_root"},
-    "agent_db_worker": {"role": "worker", "parent": "agent_supervisor_root"},
-}
+# AGENT_REGISTRY imported from app.pep.policy as single source of truth
 
 # Role-Based Access Control (RBAC) Permission Profiles
 ROLE_PERMISSIONS: Dict[str, List[str]] = {
@@ -144,7 +132,7 @@ def rotate_encryption_keys(scope: str) -> Dict[str, Any]:
     }
 
 
-def send_email(to: str, subject: str, body: str) -> Dict[str, Any]:
+def send_email(to: str, subject: str, body: str, **kwargs) -> Dict[str, Any]:
     """Simulated outbound corporate email tool. Appends to memory outbox."""
     record = {
         "to": to,
