@@ -70,43 +70,43 @@ export default function LiveTelemetryStream({
   });
 
   return (
-    <div className="flex flex-col h-full bg-gradient-to-b from-[#1e2329]/70 to-[#17191c] rounded-2xl border border-[#929da7]/30 shadow-[0_8px_30px_rgba(0,0,0,0.85)] overflow-hidden font-mono">
+    <div className="flex flex-col h-full bg-charcoal rounded-xl border border-forest shadow-[0_0_25px_rgba(6,17,12,0.9)] overflow-hidden font-mono">
       {/* Stream Header & Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-[#929da7]/20 bg-[#17191c]/90">
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#17191c] border border-crimson/60 shadow-[0_0_12px_rgba(255,75,50,0.35)]">
-            <Activity className="h-4 w-4 text-crimson animate-pulse" />
+      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-neutral-800/80 bg-neutral-900/60">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-forest border border-crimson/50 shadow-[0_0_10px_rgba(163,28,24,0.3)]">
+            <Activity className="h-3.5 w-3.5 text-crimson animate-pulse" />
           </div>
           <div>
-            <h2 className="text-base sm:text-lg font-bold tracking-wide text-neutral-100 uppercase flex items-center gap-2.5">
+            <h2 className="text-sm font-bold tracking-wide text-neutral-100 uppercase flex items-center gap-2">
               Live Agent Activity Feed
-              <span className="flex h-2.5 w-2.5 relative">
+              <span className="flex h-2 w-2 relative">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-crimson opacity-75" />
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-crimson" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-crimson" />
               </span>
             </h2>
-            <p className="text-xs sm:text-sm text-[#929da7]">
+            <p className="text-[10px] text-neutral-400">
               Real-time monitoring of all agent tool requests and guardrail decisions.
             </p>
           </div>
         </div>
 
         {/* Action and Filter Controls */}
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2">
           {/* Quick Search */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#929da7]" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-500" />
             <input
               type="text"
               placeholder="Search agent, tool, command..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-44 sm:w-60 pl-9 pr-3 py-1.5 text-xs sm:text-sm bg-[#17191c] border border-[#929da7]/30 rounded-lg text-neutral-200 placeholder:text-[#929da7]/60 focus:outline-none focus:border-crimson focus:ring-1 focus:ring-crimson/40 transition-colors"
+              className="w-40 sm:w-56 pl-8 pr-2.5 py-1 text-xs bg-neutral-950/70 border border-neutral-800 rounded-lg text-neutral-200 placeholder:text-neutral-500 focus:outline-none focus:border-crimson transition-colors duration-100"
             />
           </div>
 
           {/* Filter Pills */}
-          <div className="flex items-center rounded-lg bg-[#17191c] p-0.5 border border-[#929da7]/30">
+          <div className="flex items-center rounded-lg bg-neutral-950/70 p-0.5 border border-neutral-800">
             {(
               [
                 { id: "ALL", label: "ALL" },
@@ -118,16 +118,16 @@ export default function LiveTelemetryStream({
               <button
                 key={filter.id}
                 onClick={() => setStatusFilter(filter.id)}
-                className={`px-3 py-1 text-xs font-semibold rounded-md active:scale-[0.97] transition-all duration-150 ease-out cursor-pointer ${
+                className={`px-2 py-0.5 text-[10px] font-medium rounded-md active:scale-[0.97] transition-all duration-100 ease-out cursor-pointer ${
                   statusFilter === filter.id
                     ? filter.id === "BLOCKED"
-                      ? "bg-crimson text-white font-bold shadow-[0_0_10px_rgba(255,75,50,0.45)]"
+                      ? "bg-crimson text-white font-bold shadow-[0_0_8px_rgba(163,28,24,0.4)]"
                       : filter.id === "ALLOWED"
-                      ? "bg-[#06110c] border border-emerald-900/80 text-emerald-300 font-bold"
+                      ? "bg-forest border border-emerald-900/80 text-emerald-300 font-bold"
                       : filter.id === "PENDING"
-                      ? "bg-zinc-800 text-amber-300 font-bold"
-                      : "bg-zinc-800 text-neutral-100 font-bold"
-                    : "text-[#929da7] hover:text-neutral-200"
+                      ? "bg-neutral-800 text-amber-300 font-bold"
+                      : "bg-neutral-800 text-neutral-100 font-bold"
+                    : "text-neutral-400 hover:text-neutral-200"
                 }`}
               >
                 {filter.label}
@@ -138,17 +138,17 @@ export default function LiveTelemetryStream({
           {/* Clear stream button */}
           <button
             onClick={onClear}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-[#929da7] bg-[#17191c] border border-[#929da7]/30 hover:border-crimson/50 hover:text-red-300 rounded-lg active:scale-[0.97] transition-all duration-150 ease-out cursor-pointer"
+            className="flex items-center gap-1 px-2.5 py-1 text-xs text-neutral-400 bg-neutral-950/70 border border-neutral-800 hover:border-crimson/50 hover:text-red-300 rounded-lg active:scale-[0.97] transition-all duration-100 ease-out cursor-pointer"
             title="Clear Feed Buffer"
           >
-            <Trash2 className="h-3.5 w-3.5" />
+            <Trash2 className="h-3 w-3" />
             <span className="hidden sm:inline">Clear</span>
           </button>
         </div>
       </div>
 
       {/* Stream Column Headers */}
-      <div className="grid grid-cols-12 gap-2 px-5 py-2.5 bg-[#17191c]/70 border-b border-[#929da7]/20 text-xs font-bold tracking-wider text-[#929da7] uppercase select-none">
+      <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-neutral-950/40 border-b border-neutral-800 text-[10px] font-semibold tracking-wider text-neutral-400 uppercase select-none">
         <div className="col-span-2 sm:col-span-2">TIME / EVENT</div>
         <div className="col-span-3 sm:col-span-2">AGENT BOT</div>
         <div className="col-span-3 sm:col-span-2">PROPOSED ACTION</div>
@@ -161,19 +161,19 @@ export default function LiveTelemetryStream({
       <div
         ref={scrollContainerRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto divide-y divide-[#929da7]/15 relative"
+        className="flex-1 overflow-y-auto divide-y divide-neutral-900/90 relative"
       >
         {filteredEvents.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-64 text-center p-6 text-zinc-400">
-            <Activity className="h-10 w-10 text-zinc-600 mb-3 animate-pulse" />
-            <p className="text-base text-zinc-200 font-semibold">No events currently recorded</p>
-            <p className="text-xs sm:text-sm text-zinc-400 mt-1 max-w-sm">
+          <div className="flex flex-col items-center justify-center h-64 text-center p-6 text-neutral-500">
+            <Activity className="h-10 w-10 text-neutral-700 mb-3 animate-pulse" />
+            <p className="text-sm text-neutral-300">No events currently recorded</p>
+            <p className="text-xs text-neutral-500 mt-1 max-w-sm">
               Click any scenario in the Live Attack Simulator above or inject test events.
             </p>
             {!mockMode && (
               <button
                 onClick={onToggleMock}
-                className="mt-4 px-4 py-2 text-xs sm:text-sm font-bold uppercase rounded-lg bg-crimson text-white hover:bg-red-800 active:scale-[0.97] transition-all duration-150 ease-out shadow-[0_0_15px_rgba(163,28,24,0.35)] cursor-pointer"
+                className="mt-4 px-3 py-1.5 text-xs font-semibold rounded-lg bg-crimson text-white hover:bg-red-800 active:scale-[0.97] transition-all duration-100 ease-out shadow-[0_0_12px_rgba(163,28,24,0.3)] cursor-pointer"
               >
                 Start Simulation Stream
               </button>
@@ -192,40 +192,40 @@ export default function LiveTelemetryStream({
               <div
                 key={event.id}
                 onClick={() => setSelectedEventId(isSelected ? null : event.id)}
-                className={`animate-feed-entry group cursor-pointer transition-colors duration-150 ${
+                className={`animate-feed-entry group cursor-pointer transition-colors duration-100 ${
                   isBlocked
-                    ? "bg-crimson/5 hover:bg-crimson/10 border-l-4 border-l-crimson"
+                    ? "bg-crimson/5 hover:bg-crimson/10 border-l-2 border-l-crimson"
                     : isPending
-                    ? "bg-amber-950/15 hover:bg-amber-950/25 border-l-4 border-l-amber-500"
-                    : "hover:bg-zinc-900/40 border-l-4 border-l-transparent"
-                } ${isSelected ? "bg-zinc-900/70" : ""}`}
+                    ? "bg-amber-950/15 hover:bg-amber-950/25 border-l-2 border-l-amber-500"
+                    : "hover:bg-neutral-900/30 border-l-2 border-l-transparent"
+                } ${isSelected ? "bg-neutral-900/60" : ""}`}
               >
-                <div className="grid grid-cols-12 gap-2 px-5 py-3 items-center text-sm">
+                <div className="grid grid-cols-12 gap-2 px-4 py-2.5 items-center text-xs">
                   {/* Timestamp & ID */}
                   <div className="col-span-2 sm:col-span-2">
-                    <div className="text-zinc-100 font-bold text-sm">{formattedTime}</div>
-                    <div className="text-xs text-zinc-400 tracking-tight">{event.id}</div>
+                    <div className="text-neutral-200 font-semibold">{formattedTime}</div>
+                    <div className="text-[10px] text-neutral-500 tracking-tight">{event.id}</div>
                   </div>
 
                   {/* Originating Agent ID */}
-                  <div className="col-span-3 sm:col-span-2 flex items-center gap-2 min-w-0">
-                    <Bot className="h-4 w-4 text-zinc-400 flex-shrink-0" />
-                    <span className="text-zinc-200 truncate font-semibold text-sm">
+                  <div className="col-span-3 sm:col-span-2 flex items-center gap-1.5 min-w-0">
+                    <Bot className="h-3 w-3 text-neutral-400 flex-shrink-0" />
+                    <span className="text-neutral-300 truncate font-medium">
                       {event.agent_id}
                     </span>
                   </div>
 
-                  {/* Proposed Tool Name (Readable from 3 feet away) */}
-                  <div className="col-span-3 sm:col-span-2 flex items-center gap-2 min-w-0">
-                    <Wrench className="h-4 w-4 text-crimson flex-shrink-0" />
-                    <span className="text-red-300 truncate font-mono font-bold text-sm">
+                  {/* Proposed Tool Name */}
+                  <div className="col-span-3 sm:col-span-2 flex items-center gap-1.5 min-w-0">
+                    <Wrench className="h-3 w-3 text-crimson flex-shrink-0" />
+                    <span className="text-red-300/90 truncate font-bold">
                       {event.tool_name}
                     </span>
                   </div>
 
-                  {/* Arguments Summary (Readable text-sm) */}
-                  <div className="hidden sm:block sm:col-span-3 text-zinc-300 truncate text-sm">
-                    <span className="bg-neutral-950/90 px-2.5 py-1 rounded border border-zinc-800 text-zinc-200 inline-block max-w-full truncate text-sm font-mono">
+                  {/* Arguments Summary */}
+                  <div className="hidden sm:block sm:col-span-3 text-neutral-400 truncate text-[11px]">
+                    <span className="bg-neutral-950/80 px-2 py-0.5 rounded border border-neutral-800 text-neutral-300 inline-block max-w-full truncate">
                       {summariseArgs(event.args)}
                     </span>
                   </div>
@@ -243,23 +243,23 @@ export default function LiveTelemetryStream({
 
                 {/* Expanded Details View on Click */}
                 {isSelected && (
-                  <div className="px-5 py-4 mx-5 mb-3 rounded-xl bg-neutral-950 border border-zinc-800 text-xs sm:text-sm space-y-3 animate-feed-entry shadow-inner">
+                  <div className="px-4 py-3 mx-4 mb-2.5 rounded-lg bg-neutral-950 border border-neutral-800 text-xs space-y-2 animate-feed-entry">
                     {event.diagnosis && (
-                      <div className="flex items-start gap-2.5 text-red-200 bg-crimson/15 p-3 rounded-lg border border-crimson/40">
+                      <div className="flex items-start gap-2 text-red-300 bg-crimson/15 p-2 rounded-lg border border-crimson/40">
                         <AlertTriangle className="h-4 w-4 text-crimson flex-shrink-0 mt-0.5" />
                         <div>
-                          <span className="font-bold text-red-100 uppercase text-xs block">
+                          <span className="font-bold text-red-200 uppercase text-[10px] block">
                             Firewall Diagnosis
                           </span>
-                          <p className="text-xs sm:text-sm text-red-200 mt-0.5">{event.diagnosis}</p>
+                          <p className="text-xs text-red-200 mt-0.5">{event.diagnosis}</p>
                         </div>
                       </div>
                     )}
                     <div>
-                      <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider block mb-1.5">
+                      <span className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider block mb-1">
                         Exact Tool Payload
                       </span>
-                      <pre className="p-3 rounded-lg bg-charcoal border border-zinc-800 text-xs sm:text-sm text-emerald-400 overflow-x-auto whitespace-pre-wrap font-mono">
+                      <pre className="p-2.5 rounded-lg bg-charcoal border border-neutral-800 text-[11px] text-emerald-400 overflow-x-auto whitespace-pre-wrap">
                         {(() => {
                           try {
                             return JSON.stringify(JSON.parse(event.args), null, 2);
@@ -278,9 +278,9 @@ export default function LiveTelemetryStream({
                             e.stopPropagation();
                             onSelectForReview(event);
                           }}
-                          className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-bold uppercase tracking-wider bg-forest border border-crimson/60 text-red-200 hover:bg-crimson/20 active:scale-[0.97] transition-all duration-150 ease-out shadow-[0_0_12px_rgba(163,28,24,0.3)] cursor-pointer"
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider bg-forest border border-crimson/60 text-red-200 hover:bg-crimson/20 active:scale-[0.97] transition-all duration-100 ease-out shadow-[0_0_12px_rgba(163,28,24,0.3)] cursor-pointer"
                         >
-                          <Lock className="h-4 w-4 text-crimson" />
+                          <Lock className="h-3.5 w-3.5 text-crimson" />
                           <span>Open in Human Safety Gate</span>
                         </button>
                       </div>
@@ -294,13 +294,13 @@ export default function LiveTelemetryStream({
       </div>
 
       {/* Stream Footer Bar */}
-      <div className="px-5 py-2.5 border-t border-zinc-800/80 bg-neutral-950/80 flex items-center justify-between text-xs text-zinc-400">
+      <div className="px-4 py-2 border-t border-neutral-800/80 bg-neutral-950/60 flex items-center justify-between text-[11px] text-neutral-400">
         <div className="flex items-center gap-3">
           <span>
-            Total Recorded Entries: <strong className="text-zinc-200">{filteredEvents.length}</strong>
+            Total Entries: <strong className="text-neutral-200">{filteredEvents.length}</strong>
           </span>
-          <span className="text-zinc-600">|</span>
-          <span className="hidden sm:inline">Click any event row to inspect full tool parameters</span>
+          <span className="text-neutral-600">|</span>
+          <span className="hidden sm:inline">Click any event row to inspect full parameters</span>
         </div>
         {!autoScroll && (
           <button
@@ -308,9 +308,9 @@ export default function LiveTelemetryStream({
               setAutoScroll(true);
               if (scrollContainerRef.current) scrollContainerRef.current.scrollTop = 0;
             }}
-            className="flex items-center gap-1.5 text-xs text-amber-300 bg-neutral-900 border border-amber-600/40 px-2.5 py-1 rounded-md hover:bg-neutral-800 active:scale-[0.97] transition-all duration-150 ease-out cursor-pointer"
+            className="flex items-center gap-1 text-[11px] text-amber-300 bg-neutral-900 border border-amber-600/40 px-2 py-0.5 rounded-md hover:bg-neutral-800 active:scale-[0.97] transition-all duration-100 ease-out cursor-pointer"
           >
-            <ChevronDown className="h-3.5 w-3.5 animate-bounce" />
+            <ChevronDown className="h-3 w-3 animate-bounce" />
             Resume Auto-Scroll
           </button>
         )}

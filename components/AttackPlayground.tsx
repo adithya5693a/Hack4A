@@ -111,12 +111,13 @@ export default function AttackPlayground({ onAttackDispatched }: AttackPlaygroun
     } catch (err) {
       console.warn("[Playground] Live endpoint unreachable. Engaging offline demonstration fallback:", err);
     } finally {
+      // Tactile delay under 200ms
       setTimeout(() => {
         setActiveDeployingId(null);
         onAttackDispatched(dispatchedEvent);
 
         toast.error(`Attack Intercepted: ${scenario.name}`, {
-          description: `Dangerous action caught (${scenario.risk_score}% threat). Safety confirmation required.`,
+          description: `Dangerous action caught (${scenario.risk_score}% risk). Safety confirmation required.`,
           icon: <Flame className="h-4 w-4 text-crimson" />,
         });
       }, 150);
@@ -140,40 +141,43 @@ export default function AttackPlayground({ onAttackDispatched }: AttackPlaygroun
 
   return (
     <div
-      className="bg-gradient-to-b from-[#1e2329]/70 to-[#17191c] border border-[#929da7]/30 rounded-2xl p-4 sm:p-5 shadow-[0_4px_25px_rgba(0,0,0,0.85)] font-mono relative overflow-hidden"
+      className="bg-charcoal border border-forest rounded-xl p-4 shadow-[0_4px_25px_rgba(6,17,12,0.9)] font-mono relative overflow-hidden"
+      style={{
+        boxShadow: "0 0 25px rgba(6, 17, 12, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.03)",
+      }}
     >
       {/* Decorative Red Threat Indicator Flare */}
-      <div className="absolute top-0 right-0 w-48 h-48 bg-crimson/15 rounded-full blur-2xl pointer-events-none" />
+      <div className="absolute top-0 right-0 w-48 h-48 bg-crimson/10 rounded-full blur-2xl pointer-events-none" />
 
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-2 mb-4 pb-3 border-b border-[#929da7]/25">
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#17191c] border border-crimson/60 shadow-[0_0_12px_rgba(255,75,50,0.35)]">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-3 pb-2.5 border-b border-neutral-800/80">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-forest border border-crimson/50 shadow-[0_0_12px_rgba(163,28,24,0.35)]">
             <Flame className="h-4 w-4 text-crimson animate-pulse" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-base sm:text-lg font-bold text-neutral-100 uppercase tracking-wide">
+              <h3 className="text-xs font-bold text-neutral-100 uppercase tracking-wider">
                 Live Attack Simulator
               </h3>
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-crimson/20 text-[#ff4b32] border border-crimson/50 uppercase tracking-wider">
+              <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-crimson/20 text-red-300 border border-crimson/40 uppercase">
                 Interactive Test Lab
               </span>
             </div>
-            <p className="text-xs sm:text-sm text-[#929da7] mt-0.5">
+            <p className="text-[10px] text-neutral-400 mt-0.5">
               Click any scenario below to see how AgentShield intercepts attacks in real time.
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 text-xs text-[#929da7]">
-          <Radio className="h-3.5 w-3.5 text-crimson animate-pulse" />
+        <div className="flex items-center gap-1.5 text-[10px] text-neutral-400">
+          <Radio className="h-3 w-3 text-crimson animate-pulse" />
           <span>SIMULATOR READY</span>
         </div>
       </div>
 
       {/* 4 Interactive Attack Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {ATTACK_SCENARIOS.map((scenario, index) => {
           const isDeploying = activeDeployingId === scenario.id;
           const indexFormatted = String(index + 1).padStart(2, "0");
@@ -181,34 +185,37 @@ export default function AttackPlayground({ onAttackDispatched }: AttackPlaygroun
           return (
             <div
               key={scenario.id}
-              className="group bg-gradient-to-b from-[#1e2329]/60 to-[#17191c] border border-[#929da7]/25 rounded-xl p-4 flex flex-col justify-between hover:border-[#929da7]/60 hover:shadow-[0_0_20px_rgba(255,75,50,0.25)] transition-all duration-150 relative overflow-hidden"
+              className="group bg-neutral-900/90 border border-neutral-800 rounded-xl p-3.5 flex flex-col justify-between hover:border-crimson/80 hover:shadow-[0_0_25px_rgba(163,28,24,0.25)] transition-all duration-150 relative overflow-hidden"
+              style={{
+                boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.03)",
+              }}
             >
-              {/* Top index watermark */}
-              <div className="absolute top-2.5 right-3 text-xs font-mono font-bold text-[#929da7]/60 group-hover:text-red-400 transition-colors">
+              {/* Subtle top index watermark */}
+              <div className="absolute top-2 right-2 text-[10px] font-mono font-bold text-neutral-500 group-hover:text-red-400 transition-colors">
                 //{indexFormatted}
               </div>
 
               {/* Card Meta */}
               <div>
-                <div className="flex items-center gap-2 mb-2 pr-6">
-                  <div className="p-1.5 rounded-lg bg-[#17191c] border border-[#929da7]/20 group-hover:border-crimson/50 transition-colors">
+                <div className="flex items-center gap-1.5 mb-2 pr-6">
+                  <div className="p-1 rounded bg-charcoal border border-neutral-800 group-hover:border-crimson/50 transition-colors">
                     {getScenarioIcon(scenario.id)}
                   </div>
-                  <span className="text-sm sm:text-base font-bold text-neutral-100 group-hover:text-red-200 transition-colors">
+                  <span className="text-xs font-bold text-neutral-100 group-hover:text-red-200 transition-colors">
                     {scenario.name}
                   </span>
                 </div>
 
-                <div className="flex items-center gap-2 mb-2.5">
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-crimson/20 border border-crimson/50 text-[#ff4b32] uppercase tracking-tight">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-crimson/20 border border-crimson/50 text-red-300 uppercase tracking-tight">
                     {scenario.badge}
                   </span>
-                  <span className="text-xs text-[#929da7] font-bold">
+                  <span className="text-[10px] text-neutral-400 font-bold">
                     {scenario.risk_score}% Threat
                   </span>
                 </div>
 
-                <p className="text-xs text-zinc-300 leading-relaxed mb-4">
+                <p className="text-[11px] text-neutral-400 leading-snug line-clamp-2 mb-3">
                   {scenario.subtext}
                 </p>
               </div>
@@ -217,17 +224,17 @@ export default function AttackPlayground({ onAttackDispatched }: AttackPlaygroun
               <button
                 onClick={() => handleLaunchAttack(scenario)}
                 disabled={isDeploying}
-                className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs sm:text-sm font-bold uppercase tracking-wider bg-crimson text-white hover:bg-[#e03d25] active:scale-[0.97] transition-all duration-150 ease-out border border-[#ff4b32]/70 shadow-[0_0_15px_rgba(255,75,50,0.4)] disabled:opacity-60 cursor-pointer"
+                className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-bold uppercase tracking-wider bg-crimson text-white hover:bg-red-800 active:scale-[0.97] transition-all duration-150 ease-out border border-red-500/70 shadow-[0_0_15px_rgba(163,28,24,0.4)] disabled:opacity-60 cursor-pointer"
               >
                 {isDeploying ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     <span>Intercepting...</span>
                   </>
                 ) : (
                   <>
                     <span>Run Test →</span>
-                    <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
+                    <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
                   </>
                 )}
               </button>

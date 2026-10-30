@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import SOCHeader from "@/components/SOCHeader";
-import HeroStatsRibbon from "@/components/HeroStatsRibbon";
 import AestheticHeroBanner from "@/components/AestheticHeroBanner";
 import ManualTestToolbar from "@/components/ManualTestToolbar";
 import AttackPlayground from "@/components/AttackPlayground";
@@ -37,9 +36,6 @@ export default function SOCDashboardPage() {
     simulateTier3Attack,
     stats,
   } = useSecurityStream();
-
-  // Dynamic counter: start at 142, auto-increment on attack trigger or block
-  const [attackBlockedCounter, setAttackBlockedCounter] = useState<number>(142);
 
   // HITL Modal State
   const [activeModalEvent, setActiveModalEvent] = useState<TelemetryEvent | null>(null);
@@ -113,7 +109,6 @@ export default function SOCDashboardPage() {
         icon: <ShieldCheck className="h-4 w-4 text-emerald-400" />,
       });
     } else {
-      setAttackBlockedCounter((prev) => prev + 1);
       toast.error("Execution Blocked & Protected", {
         description: `${event.agent_id} [${event.tool_name}] intercepted & isolated.`,
         icon: <ShieldAlert className="h-4 w-4 text-crimson" />,
@@ -137,7 +132,6 @@ export default function SOCDashboardPage() {
 
   const handleSimulateAttack = () => {
     const attack = simulateTier3Attack();
-    setAttackBlockedCounter((prev) => prev + 1);
     autoPromptedIdsRef.current.add(attack.id);
     setActiveModalEvent(attack);
     setIsModalOpen(true);
@@ -149,7 +143,6 @@ export default function SOCDashboardPage() {
 
   // Judges' 1-Click Attack Simulator Dispatcher
   const handlePlaygroundAttack = (event: TelemetryEvent) => {
-    setAttackBlockedCounter((prev) => prev + 1);
     injectEvent(event);
     autoPromptedIdsRef.current.add(event.id);
     setActiveModalEvent(event);
@@ -157,13 +150,13 @@ export default function SOCDashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#17191c] text-neutral-200 flex flex-col font-mono selection:bg-crimson/30 selection:text-white">
+    <div className="min-h-screen bg-charcoal text-neutral-200 flex flex-col font-mono selection:bg-crimson/40 selection:text-white">
       {/* Background High-Tech Subtle Glow Elements */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        {/* Coral Ambient Glow - Top Right */}
+        {/* Crimson Ambient Glow - Top Right */}
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-crimson/15 rounded-full blur-3xl" />
-        {/* Cool Steel Depth - Bottom Left */}
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-[#929da7]/10 rounded-full blur-3xl opacity-80" />
+        {/* Forest Green Ambient Depth - Bottom Left */}
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-forest rounded-full blur-3xl opacity-80" />
       </div>
 
       {/* Top SOC Navigation Bar */}
@@ -176,9 +169,6 @@ export default function SOCDashboardPage() {
 
       {/* Main SOC Dashboard Viewport */}
       <main className="flex-1 flex flex-col p-4 sm:p-6 gap-4 sm:gap-6 relative z-10 max-w-[1700px] w-full mx-auto">
-        {/* Dynamic Hero Stats Bar */}
-        <HeroStatsRibbon blockedCount={attackBlockedCounter} />
-
         {/* Aesthetic Hero Banner */}
         <AestheticHeroBanner
           onExplorePlayground={() => {
@@ -227,7 +217,7 @@ export default function SOCDashboardPage() {
           {/* Side Monitor Panel (1 Column on Large Screens) */}
           <div id="policy" className="space-y-4 flex flex-col scroll-mt-20">
             {/* Active Human Safety Gate Queue Card */}
-            <div className="bg-gradient-to-b from-[#1e2329]/70 to-[#17191c] border border-crimson/60 rounded-2xl p-4 shadow-[0_0_20px_rgba(255,75,50,0.25)] relative overflow-hidden">
+            <div className="bg-charcoal border border-crimson/60 rounded-xl p-4 shadow-[0_0_20px_rgba(163,28,24,0.25)] relative overflow-hidden">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2 text-xs font-bold text-red-200 uppercase tracking-wider">
                   <Lock className="h-4 w-4 text-crimson" />
@@ -240,93 +230,93 @@ export default function SOCDashboardPage() {
                   </span>
                 )}
               </div>
-              <p className="text-[11px] text-[#929da7] leading-relaxed mb-3">
+              <p className="text-[11px] text-neutral-400 leading-relaxed mb-3">
                 Holds dangerous commands (&gt; 70% risk) until approved by a human.
               </p>
 
               {pendingQueue.length > 0 ? (
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between text-xs p-2.5 rounded-lg bg-[#17191c] border border-[#929da7]/25">
+                  <div className="flex items-center justify-between text-xs p-2.5 rounded-lg bg-neutral-900 border border-neutral-800">
                     <span className="text-amber-300 font-bold flex items-center gap-1.5">
                       <Radio className="h-3 w-3 text-amber-400 animate-pulse" />
                       {pendingQueue.length} Actions Waiting
                     </span>
                     <button
                       onClick={() => handleManualReview(pendingQueue[0])}
-                      className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-crimson text-white hover:bg-[#e03d25] active:scale-[0.97] transition-all duration-100 ease-out shadow-[0_0_12px_rgba(255,75,50,0.4)] cursor-pointer"
+                      className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-crimson text-white hover:bg-red-800 active:scale-[0.97] transition-all duration-100 ease-out shadow-[0_0_12px_rgba(163,28,24,0.4)] cursor-pointer"
                     >
                       Review
                     </button>
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center gap-2 text-xs text-emerald-400 p-2.5 rounded-lg bg-[#06110c] border border-emerald-900/60">
+                <div className="flex items-center gap-2 text-xs text-emerald-400 p-2.5 rounded-lg bg-forest border border-emerald-900/60">
                   <ShieldCheck className="h-4 w-4 text-emerald-400 flex-shrink-0" />
                   <span>No actions waiting in queue</span>
                 </div>
               )}
             </div>
 
-            {/* 5. Security Engine Status */}
-            <div className="bg-gradient-to-b from-[#1e2329]/70 to-[#17191c] border border-[#929da7]/30 rounded-2xl p-4 shadow-sm">
+            {/* 5. Security Engine Status (Exact User Requirement) */}
+            <div className="bg-charcoal border border-forest rounded-xl p-4 shadow-[0_0_20px_rgba(6,17,12,0.8)]">
               <div className="flex items-center gap-2 text-xs font-bold text-neutral-200 uppercase tracking-wider mb-3">
                 <Cpu className="h-4 w-4 text-emerald-400" />
                 <span>Security Engine Status</span>
               </div>
               <div className="space-y-2.5 text-xs">
                 {/* Command Interceptor */}
-                <div className="flex justify-between items-center py-1 border-b border-[#929da7]/15">
-                  <span className="text-[#929da7]">Command Interceptor</span>
-                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-semibold bg-[#06110c] border border-emerald-900/60 text-emerald-400">
+                <div className="flex justify-between items-center py-1 border-b border-neutral-800">
+                  <span className="text-neutral-400">Command Interceptor</span>
+                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-semibold bg-forest border border-emerald-900/60 text-emerald-400">
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-glow-pulse" />
                     Active
                   </span>
                 </div>
 
                 {/* Permission Rules */}
-                <div className="flex justify-between items-center py-1 border-b border-[#929da7]/15">
-                  <span className="text-[#929da7]">Permission Rules</span>
+                <div className="flex justify-between items-center py-1 border-b border-neutral-800">
+                  <span className="text-neutral-400">Permission Rules</span>
                   <span className="text-[11px] text-emerald-400 font-semibold text-right">
                     3 Tiers Active
                   </span>
                 </div>
 
                 {/* Human Safety Gate */}
-                <div className="flex justify-between items-center py-1 border-b border-[#929da7]/15">
-                  <span className="text-[#929da7]">Human Safety Gate</span>
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-crimson/20 border border-crimson/50 text-[#ff4b32]">
+                <div className="flex justify-between items-center py-1 border-b border-neutral-800">
+                  <span className="text-neutral-400">Human Safety Gate</span>
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-crimson/20 border border-crimson/50 text-red-300">
                     Armed (&gt;70% Risk)
                   </span>
                 </div>
 
                 {/* Injection Scanner */}
-                <div className="flex justify-between items-center py-1 border-b border-[#929da7]/15">
-                  <span className="text-[#929da7]">Injection Scanner</span>
+                <div className="flex justify-between items-center py-1 border-b border-neutral-800">
+                  <span className="text-neutral-400">Injection Scanner</span>
                   <span className="text-emerald-400 font-semibold">Active</span>
                 </div>
 
                 {/* Tool Authenticity */}
-                <div className="flex justify-between items-center py-1 border-b border-[#929da7]/15">
-                  <span className="text-[#929da7]">Tool Authenticity</span>
+                <div className="flex justify-between items-center py-1 border-b border-neutral-800">
+                  <span className="text-neutral-400">Tool Authenticity</span>
                   <span className="text-emerald-400 font-semibold">Verified</span>
                 </div>
 
                 {/* Tamper-Proof Audit Log */}
                 <div className="flex justify-between items-center py-1">
-                  <span className="text-[#929da7]">Tamper-Proof Audit Log</span>
+                  <span className="text-neutral-400">Tamper-Proof Audit Log</span>
                   <span className="text-emerald-400 font-semibold">Synchronized</span>
                 </div>
               </div>
             </div>
 
             {/* Severity Classifications */}
-            <div className="bg-gradient-to-b from-[#1e2329]/70 to-[#17191c] border border-[#929da7]/30 rounded-2xl p-4 shadow-sm">
+            <div className="bg-charcoal border border-forest rounded-xl p-4 shadow-[0_0_20px_rgba(6,17,12,0.8)]">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2 text-xs font-bold text-neutral-200 uppercase tracking-wider">
                   <ShieldAlert className="h-4 w-4 text-crimson" />
                   <span>Threat Classifications</span>
                 </div>
-                <span className="text-[10px] text-[#929da7] font-mono">3 TIERS</span>
+                <span className="text-[10px] text-neutral-500 font-mono">3 TIERS</span>
               </div>
 
               <div className="space-y-2 text-xs">
@@ -344,27 +334,27 @@ export default function SOCDashboardPage() {
                 </div>
 
                 {/* Tier 2: 40% - 69% Risk */}
-                <div className="p-2.5 rounded-lg bg-[#17191c] border border-[#929da7]/25 space-y-1">
+                <div className="p-2.5 rounded-lg bg-neutral-900 border border-neutral-800 space-y-1">
                   <div className="flex items-center justify-between">
                     <span className="font-semibold text-amber-300 text-xs">40% - 69% Threat</span>
-                    <span className="px-2 py-0.5 rounded text-[10px] bg-zinc-800 border border-zinc-700 text-amber-300 font-semibold tracking-wider">
+                    <span className="px-2 py-0.5 rounded text-[10px] bg-neutral-800 border border-neutral-700 text-amber-300 font-semibold tracking-wider">
                       INSPECTED
                     </span>
                   </div>
-                  <p className="text-[10px] text-[#929da7] leading-tight">
+                  <p className="text-[10px] text-neutral-400 leading-tight">
                     Sensitive Action (Inspected against scope before execution)
                   </p>
                 </div>
 
                 {/* Tier 1: 0% - 39% Risk */}
-                <div className="p-2.5 rounded-lg bg-[#06110c] border border-emerald-900/60 space-y-1">
+                <div className="p-2.5 rounded-lg bg-forest border border-emerald-900/60 space-y-1">
                   <div className="flex items-center justify-between">
                     <span className="font-semibold text-emerald-300 text-xs">0% - 39% Threat</span>
-                    <span className="px-2 py-0.5 rounded text-[10px] bg-[#06110c] text-emerald-400 font-semibold border border-emerald-900/50 tracking-wider">
+                    <span className="px-2 py-0.5 rounded text-[10px] bg-forest text-emerald-400 font-semibold border border-emerald-900/50 tracking-wider">
                       ALLOWED
                     </span>
                   </div>
-                  <p className="text-[10px] text-[#929da7] leading-tight">
+                  <p className="text-[10px] text-neutral-400 leading-tight">
                     Safe / Automated (Approved tools execute without delay)
                   </p>
                 </div>
@@ -372,22 +362,22 @@ export default function SOCDashboardPage() {
             </div>
 
             {/* Ingestion Stream Guide */}
-            <div className="bg-gradient-to-b from-[#1e2329]/70 to-[#17191c] border border-[#929da7]/30 rounded-2xl p-4 shadow-sm flex-1 flex flex-col justify-between">
+            <div className="bg-charcoal border border-forest rounded-xl p-4 shadow-[0_0_20px_rgba(6,17,12,0.8)] flex-1 flex flex-col justify-between">
               <div>
                 <div className="flex items-center gap-2 text-xs font-bold text-neutral-200 uppercase tracking-wider mb-2">
                   <Activity className="h-4 w-4 text-emerald-400" />
                   <span>Activity Feed Status</span>
                 </div>
-                <p className="text-[11px] text-[#929da7] leading-relaxed">
+                <p className="text-[11px] text-neutral-400 leading-relaxed">
                   Real-time pipeline monitoring AI agent execution commands. Use the attack simulator to test live responses.
                 </p>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-[#929da7]/20 flex items-center justify-between text-[11px]">
-                <span className="text-[#929da7]">Live Status:</span>
+              <div className="mt-4 pt-3 border-t border-neutral-800 flex items-center justify-between text-[11px]">
+                <span className="text-neutral-500">Live Status:</span>
                 <span
                   className={`font-semibold ${
-                    mockMode ? "text-amber-400" : connected ? "text-emerald-400" : "text-[#929da7]"
+                    mockMode ? "text-amber-400" : connected ? "text-emerald-400" : "text-neutral-400"
                   }`}
                 >
                   {mockMode ? "Simulation Active" : connected ? "Firewall Online" : "Standby (Ready)"}

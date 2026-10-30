@@ -11,9 +11,9 @@ export default function RiskScoreBar({ score }: RiskScoreBarProps) {
 
   const config = {
     critical: {
-      bar: "bg-crimson shadow-[0_0_8px_#ff4b32]",
-      text: "text-[#ff4b32] font-bold",
-      badge: "border-crimson/50 text-[#ff4b32]",
+      bar: "bg-crimson shadow-[0_0_8px_#A31C18]",
+      text: "text-red-400 font-bold",
+      badge: "border-crimson/50 text-red-300",
     },
     high: {
       bar: "bg-orange-600 shadow-[0_0_6px_#ea580c]",
