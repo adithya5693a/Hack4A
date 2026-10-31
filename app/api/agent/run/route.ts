@@ -14,6 +14,19 @@ export async function POST(request: Request) {
   const prompt = body.prompt || "Default inspection task";
   const shieldEnabled = body.shield_enabled !== false;
 
+  const pLower = prompt.toLowerCase();
+  const isApprovalReq =
+    pLower.includes("pg_dump") ||
+    pLower.includes("backup") ||
+    pLower.includes("maintenance") ||
+    pLower.includes("assessment") ||
+    pLower.includes("approval");
+
+  if (isApprovalReq) {
+    const result = runCustomPrompt(prompt, shieldEnabled);
+    return NextResponse.json(result, { status: 200 });
+  }
+
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 1200);

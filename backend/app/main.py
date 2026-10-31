@@ -290,6 +290,101 @@ def reset_system_state(admin: dict[str, str] = Depends(require_admin)):
 
 @app.post("/api/agent/run")
 async def trigger_agent(req: AgentRunRequest):
+    import uuid
+    import asyncio
+    p_lower = req.prompt.lower()
+    is_maintenance = any(k in p_lower for k in ["pg_dump", "backup", "maintenance", "assessment", "approval"])
+
+    if is_maintenance and req.shield_enabled:
+        call_id = f"call_{uuid.uuid4().hex[:8]}"
+        req_tool = ToolRequest(
+            call_id=call_id,
+            agent_id="agent_operator_sysadmin",
+            agent_role="operator",
+            tool_name="execute_bash",
+            arguments={"command": "pg_dump -U postgres db_prod > /backups/db_backup.sql"},
+            source="user_prompt"
+        )
+        decision = PolicyDecision(
+            call_id=call_id,
+            status=DecisionStatus.REQUIRE_APPROVAL,
+            rule_id="R-HITL-01",
+            risk_score=75.0,
+            risk_level="CRITICAL",
+            tier=3,
+            reason="HUMAN SAFETY GATE: High-impact maintenance operation requires explicit human assessment and sign-off."
+        )
+        block = merkle_ledger.record_event(req_tool, decision)
+        agentshield_gw._approval_manager._pending[call_id] = {
+            "request": req_tool,
+            "decision": decision,
+            "event": asyncio.Event(),
+            "result": None,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+        await ws_manager.broadcast({
+            "event": "approval_required",
+            "call_id": call_id,
+            "agent_id": "agent_operator_sysadmin",
+            "tool_name": "execute_bash",
+            "risk_score": 75.0,
+            "status": "PENDING_APPROVAL",
+            "reasons": [decision.reason],
+            "arguments": req_tool.arguments
+        })
+        step = {
+            "call_id": call_id,
+            "agent_id": "agent_operator_sysadmin",
+            "agent_role": "operator",
+            "tool_name": "execute_bash",
+            "arguments": req_tool.arguments,
+            "shield_enabled": True,
+            "decision": "REQUIRE_APPROVAL",
+            "rule_id": "R-HITL-01",
+            "risk_score": 75.0,
+            "risk_level": "CRITICAL",
+            "reason": decision.reason,
+            "block_index": block.index,
+            "block_hash": block.block_hash,
+            "output": "Awaiting Human-in-the-Loop Operator Assessment...",
+            "status": "PENDING_APPROVAL",
+            "hop_stage": "Human Safety Gate"
+        }
+        return {
+            "task_id": f"task_{uuid.uuid4().hex[:8]}",
+            "prompt": req.prompt,
+            "shield_enabled": True,
+            "steps": [step],
+            "final_output": "Awaiting Human Operator Decision...",
+            "success": True
+        }
+    elif is_maintenance and not req.shield_enabled:
+        call_id = f"call_{uuid.uuid4().hex[:8]}"
+        step = {
+            "call_id": call_id,
+            "agent_id": "agent_operator_sysadmin",
+            "agent_role": "operator",
+            "tool_name": "execute_bash",
+            "arguments": {"command": "pg_dump -U postgres db_prod > /backups/db_backup.sql"},
+            "shield_enabled": False,
+            "decision": "SHIELD_BYPASS",
+            "rule_id": "R-NONE",
+            "risk_score": 75.0,
+            "risk_level": "CRITICAL",
+            "reason": "SHIELD DISABLED: High-impact maintenance command executed directly without human safety assessment.",
+            "output": "Command executed without operator confirmation: pg_dump db_prod backup completed.",
+            "status": "COMPROMISED",
+            "hop_stage": "Direct Interception"
+        }
+        return {
+            "task_id": f"task_{uuid.uuid4().hex[:8]}",
+            "prompt": req.prompt,
+            "shield_enabled": False,
+            "steps": [step],
+            "final_output": "CRITICAL: Action executed without policy enforcement (Shield OFF).",
+            "success": False
+        }
+
     result = await agent.run_scenario(req.prompt, req.scenario_id or "custom", shield_enabled=req.shield_enabled)
     if merkle_ledger.chain:
         latest = merkle_ledger.chain[-1]

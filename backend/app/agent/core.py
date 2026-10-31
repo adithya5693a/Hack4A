@@ -150,6 +150,9 @@ class AutonomousAgent:
             except Exception as e:
                 step_record["output"] = f"Execution error: {str(e)}"
                 step_record["status"] = "ERROR"
+        elif decision.status in ["REQUIRE_APPROVAL", "PENDING_APPROVAL"]:
+            step_record["output"] = f"Awaiting Human-in-the-Loop Operator Confirmation [{decision.rule_id}]: {decision.reason}"
+            step_record["status"] = "PENDING_APPROVAL"
         else:
             step_record["output"] = f"EXECUTION DENIED BY AGENTSHIELD [{decision.rule_id}]: {decision.reason}"
             step_record["status"] = "DENIED"

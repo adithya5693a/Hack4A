@@ -585,12 +585,21 @@ export function runCustomPrompt(prompt: string, shieldEnabled: boolean = true) {
   let toolName = "inspect_prompt";
   let args: any = { prompt };
   let isHarmful = false;
+  let isApproval = false;
   let ruleId = "R-SAFE-01";
   let riskScore = 5;
   let reason = "Benign user prompt verified by AgentShield Policy Enforcement Point.";
   let output = "Agent executed task within safe parameters.";
 
-  if (pLower.includes("rm -rf") || pLower.includes("delete") || pLower.includes("bash") || pLower.includes("curl") || pLower.includes("kill")) {
+  if (pLower.includes("pg_dump") || pLower.includes("backup") || pLower.includes("maintenance") || pLower.includes("assessment") || pLower.includes("approval")) {
+    toolName = "execute_bash";
+    args = { command: "pg_dump -U postgres db_prod > /backups/db_backup.sql" };
+    isApproval = true;
+    ruleId = "R-HITL-01";
+    riskScore = 75;
+    reason = "HUMAN SAFETY GATE: High-impact maintenance operation requires explicit human assessment and sign-off.";
+    output = "Awaiting Human-in-the-Loop Operator Assessment...";
+  } else if (pLower.includes("rm -rf") || pLower.includes("delete") || pLower.includes("bash") || pLower.includes("curl") || pLower.includes("kill")) {
     toolName = "execute_bash";
     args = { command: prompt };
     isHarmful = true;
@@ -627,7 +636,26 @@ export function runCustomPrompt(prompt: string, shieldEnabled: boolean = true) {
   let decision = "ALLOW";
   let status = "SUCCESS";
 
-  if (isHarmful) {
+  if (isApproval) {
+    if (shieldEnabled) {
+      decision = "REQUIRE_APPROVAL";
+      status = "PENDING_APPROVAL";
+      pendingApprovals.push({
+        call_id: callId,
+        agent_id: "agent_worker_backup",
+        tool_name: "execute_bash",
+        args_preview: JSON.stringify(args),
+        risk_score: 75,
+        timestamp: new Date().toISOString(),
+      });
+    } else {
+      decision = "SHIELD_BYPASS";
+      ruleId = "R-NONE";
+      status = "COMPROMISED";
+      reason = "SHIELD DISABLED: High-impact maintenance command executed directly without human safety assessment.";
+      output = "Command executed without operator confirmation: pg_dump db_prod backup completed.";
+    }
+  } else if (isHarmful) {
     if (shieldEnabled) {
       decision = "DENY";
       status = "DENIED";
@@ -662,7 +690,7 @@ export function runCustomPrompt(prompt: string, shieldEnabled: boolean = true) {
     hop_stage: "Direct Interception",
   };
 
-  const compromised = !shieldEnabled && isHarmful;
+  const compromised = !shieldEnabled && (isHarmful || isApproval);
   const neutralized = shieldEnabled && isHarmful;
 
   return {
