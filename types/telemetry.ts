@@ -24,6 +24,8 @@ export interface TelemetryEvent {
   rule_id?: string;
   /** Underlying event type (e.g. approval_required, allowed, blocked) */
   event_type?: string;
+  /** Multi-hop execution stage (e.g. "Hop 1/2: Document Read") */
+  hop_stage?: string;
 }
 
 export type ApprovalDecision = "APPROVE" | "REJECT";

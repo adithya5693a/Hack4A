@@ -190,6 +190,11 @@ export default function LiveTelemetryStream({
                   <div className="col-span-2 sm:col-span-2">
                     <div className="text-neutral-200 font-semibold">{formattedTime}</div>
                     <div className="text-[10px] text-neutral-500 tracking-tight">{event.id}</div>
+                    {event.hop_stage && (
+                      <span className="inline-block mt-0.5 px-1 py-0.2 rounded text-[9px] font-mono bg-neutral-900 border border-neutral-700/80 text-amber-300/90 font-semibold">
+                        {event.hop_stage}
+                      </span>
+                    )}
                   </div>
 
                   {/* Originating Agent ID */}

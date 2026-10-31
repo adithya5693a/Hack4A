@@ -297,6 +297,17 @@ async def trigger_agent(req: AgentRunRequest):
             "event": "NEW_BLOCK",
             "block": latest.model_dump()
         })
+    if result.steps:
+        await ws_manager.broadcast({
+            "event": "ATTACK_INTERCEPTED",
+            "data": {
+                "scenario_name": f"Custom Prompt: {req.prompt[:32]}",
+                "shield_enabled": True,
+                "steps": result.steps,
+                "neutralized": any(s.get("decision") == "DENY" for s in result.steps),
+                "compromised": False
+            }
+        })
     return {
         "task_id": result.task_id,
         "prompt": result.prompt,

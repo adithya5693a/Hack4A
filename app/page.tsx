@@ -649,7 +649,7 @@ export default function SOCDashboardPage() {
           </span>
         </div>
         <div className="text-[11px] text-neutral-400">
-          Gateway: <span className="text-neutral-200">{BACKEND_URL}</span>
+          Gateway: <span className="text-neutral-200">{BACKEND_URL || "AgentShield PEP Edge / Proxy"}</span>
         </div>
       </footer>
     </div>

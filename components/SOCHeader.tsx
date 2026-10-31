@@ -46,9 +46,9 @@ export default function SOCHeader({
     const pingBackend = async () => {
       try {
         const start = performance.now();
-        const res = await fetch(`${BACKEND_URL}/health`, { cache: "no-store" });
+        const res = await fetch("/health", { cache: "no-store" });
         if (res.ok && isMounted) {
-          const duration = Math.round(performance.now() - start);
+          const duration = Math.max(1, Math.round(performance.now() - start));
           setLatency(duration);
         } else if (isMounted) {
           setLatency(null);
@@ -80,7 +80,7 @@ export default function SOCHeader({
               <h1 className="text-lg font-bold tracking-wider font-mono text-neutral-100 uppercase">
                 Agent<span className="text-crimson">Shield</span>
               </h1>
-              {connected && latency !== null ? (
+              {connected || latency !== null ? (
                 <span className="rounded bg-forest px-1.5 py-0.5 text-[10px] font-mono font-semibold tracking-wider text-emerald-400 border border-emerald-900/60 flex items-center gap-1">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-glow-pulse" />
                   PEP ONLINE

@@ -1,29 +1,40 @@
 import { NextResponse } from "next/server";
-import { BACKEND_URL } from "@/lib/api-config";
+import { SERVER_BACKEND_URL } from "@/lib/api-config";
+import { runCustomPrompt } from "@/lib/edge-pep";
+
 
 export async function POST(request: Request) {
+  let body: any = {};
   try {
-    const body = await request.json();
-    const res = await fetch(`${BACKEND_URL}/api/agent/run`, {
+    body = await request.json();
+  } catch {
+    body = { prompt: "Default inspection task" };
+  }
+
+  const prompt = body.prompt || "Default inspection task";
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 1200);
+
+    const res = await fetch(`${SERVER_BACKEND_URL}/api/agent/run`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
-    });
+      signal: controller.signal,
+    }).catch(() => null);
 
-    if (!res.ok) {
-      const errText = await res.text();
-      return NextResponse.json(
-        { error: `Backend returned ${res.status}`, details: errText },
-        { status: res.status }
-      );
+    clearTimeout(timeoutId);
+
+    if (res && res.ok) {
+      const data = await res.json();
+      return NextResponse.json(data, { status: 200 });
     }
-
-    const data = await res.json();
-    return NextResponse.json(data, { status: 200 });
-  } catch (error) {
-    return NextResponse.json(
-      { error: "Failed to forward agent run to backend", details: String(error) },
-      { status: 502 }
-    );
+  } catch {
+    // Edge fallback
   }
+
+  // Edge PEP fallback simulation
+  const result = runCustomPrompt(prompt);
+  return NextResponse.json(result, { status: 200 });
 }

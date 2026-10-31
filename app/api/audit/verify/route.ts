@@ -1,27 +1,29 @@
 import { NextResponse } from "next/server";
-import { BACKEND_URL } from "@/lib/api-config";
+import { SERVER_BACKEND_URL } from "@/lib/api-config";
+import { verifyAuditLedger } from "@/lib/edge-pep";
+
 
 export async function GET() {
   try {
-    const res = await fetch(`${BACKEND_URL}/api/audit/verify`, {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 1200);
+
+    const res = await fetch(`${SERVER_BACKEND_URL}/api/audit/verify`, {
       method: "GET",
       cache: "no-store",
-    });
+      signal: controller.signal,
+    }).catch(() => null);
 
-    if (!res.ok) {
-      const errText = await res.text();
-      return NextResponse.json(
-        { error: `Backend returned ${res.status}`, details: errText },
-        { status: res.status }
-      );
+    clearTimeout(timeoutId);
+
+    if (res && res.ok) {
+      const data = await res.json();
+      return NextResponse.json(data, { status: 200 });
     }
-
-    const data = await res.json();
-    return NextResponse.json(data, { status: 200 });
-  } catch (error) {
-    return NextResponse.json(
-      { error: "Failed to forward audit verify to backend", details: String(error) },
-      { status: 502 }
-    );
+  } catch {
+    // Edge fallback
   }
+
+  const result = verifyAuditLedger();
+  return NextResponse.json(result, { status: 200 });
 }

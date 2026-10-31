@@ -106,5 +106,6 @@ export function adaptBackendToTelemetry(raw: any): TelemetryEvent | null {
     diagnosis: diagnosis || (status === "BLOCKED" ? "Blocked by policy engine" : status === "COMPROMISED" ? "Compromised: Unrestricted execution (Shield OFF)" : "Execution verified"),
     rule_id: ruleId,
     event_type: raw.event || undefined,
+    hop_stage: raw.hop_stage || (raw.step_index !== undefined ? `Step ${raw.step_index + 1}` : undefined),
   };
 }

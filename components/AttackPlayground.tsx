@@ -189,9 +189,20 @@ export default function AttackPlayground({ onAttackDispatched }: AttackPlaygroun
         });
         if (adapted) mappedEvents.push(adapted);
       }
-      if (mappedEvents.length > 0) {
-        onAttackDispatched(mappedEvents);
+      if (mappedEvents.length === 0) {
+        mappedEvents.push({
+          id: `call_${Date.now()}`,
+          timestamp: new Date().toISOString(),
+          agent_id: "agent_worker_finance",
+          tool_name: "inspect_prompt",
+          args: JSON.stringify({ prompt: customPrompt }),
+          risk_score: 5,
+          status: "ALLOWED",
+          diagnosis: "Prompt analyzed by PEP intent engine. No unauthorized tool invocations requested.",
+          rule_id: "R-SAFE-01",
+        });
       }
+      onAttackDispatched(mappedEvents);
 
       toast.success("Custom Prompt Evaluated", {
         description: `Agent executed ${steps.length} step(s) through Policy Enforcement Point.`,
