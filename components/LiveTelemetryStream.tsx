@@ -168,7 +168,7 @@ export default function LiveTelemetryStream({
             const isPending = event.status === "PENDING";
             let formattedTime = event.timestamp;
             try {
-              formattedTime = new Date(event.timestamp).toISOString().substring(11, 19);
+              formattedTime = new Date(event.timestamp).toLocaleTimeString();
             } catch {
               // fallback
             }

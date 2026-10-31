@@ -47,16 +47,21 @@ export default function SOCDashboardPage() {
   const [isMCPPolicyOpen, setIsMCPPolicyOpen] = useState<boolean>(false);
   const [isTourRunning, setIsTourRunning] = useState<boolean>(false);
 
-  // Keep track of events already auto-prompted so we don't bombard the user repeatedly
+  // Keep track of events already auto-prompted or dismissed so we don't bombard the user repeatedly
   const autoPromptedIdsRef = useRef<Set<string>>(new Set());
+  const dismissedPendingIdsRef = useRef<Set<string>>(new Set());
 
   // Acceptance Criterion: Open modal ONLY on PENDING / approval_required events.
-  // NEVER open because risk_score > 70 on an already-ALLOWED row.
+  // NEVER open repeatedly after dismissal or because risk_score > 70 on an already-ALLOWED row.
   useEffect(() => {
     if (isModalOpen) return;
 
     const pendingEvent = events.find((evt) => {
-      return evt.status === "PENDING" && !autoPromptedIdsRef.current.has(evt.id);
+      return (
+        evt.status === "PENDING" &&
+        !autoPromptedIdsRef.current.has(evt.id) &&
+        !dismissedPendingIdsRef.current.has(evt.id)
+      );
     });
 
     if (pendingEvent) {
@@ -65,6 +70,19 @@ export default function SOCDashboardPage() {
       setIsModalOpen(true);
     }
   }, [events, isModalOpen]);
+
+  const handleCloseModal = () => {
+    if (activeModalEvent) {
+      dismissedPendingIdsRef.current.add(activeModalEvent.id);
+    }
+    // Dismiss all currently pending events from auto-popping again
+    events.forEach((e) => {
+      if (e.status === "PENDING") {
+        dismissedPendingIdsRef.current.add(e.id);
+      }
+    });
+    setIsModalOpen(false);
+  };
 
   // Queue of remaining unhandled PENDING events
   const pendingQueue = events.filter((e) => e.status === "PENDING");
@@ -282,11 +300,11 @@ export default function SOCDashboardPage() {
       }
       await sleep(1500);
 
-      // Stage 5: Real HITL Safety Gate (Quarantined Tool without auto_resolve)
+      // Stage 5: Real HITL Safety Gate (Quarantined Tool verified with automated resolution)
       toast("Stage 5/5: Human Safety Gate Quarantine", {
         description: "Dispatching high-impact tool requiring manual SOC approval...",
       });
-      const s5Res = await fetch(`${BACKEND_URL}/api/attacks/legitimate_approval?shield_enabled=true`, {
+      const s5Res = await fetch(`${BACKEND_URL}/api/attacks/legitimate_approval?shield_enabled=true&auto_resolve=approve`, {
         method: "POST",
       });
       if (s5Res.ok) {
@@ -601,7 +619,7 @@ export default function SOCDashboardPage() {
       <HITLApprovalModal
         event={activeModalEvent}
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={handleCloseModal}
         onAction={handleApprovalAction}
         queueCount={pendingQueue.length}
         isAuthenticated={isAuthenticated}

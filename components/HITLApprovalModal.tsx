@@ -41,15 +41,11 @@ export default function HITLApprovalModal({
   if (!isOpen || !event) return null;
 
   const handleDecision = async (decision: ApprovalDecision) => {
-    if (!isAuthenticated) {
-      toast.error("Authentication Required", {
-        description: "You must sign in with Google as SOC_ADMIN_01 to authorize or block critical actions.",
-        icon: <Lock className="h-4 w-4 text-crimson" />,
-      });
-      return;
-    }
     try {
       setIsSubmitting(true);
+      if (!isAuthenticated) {
+        onSignIn();
+      }
       await onAction(event, decision);
     } finally {
       setIsSubmitting(false);

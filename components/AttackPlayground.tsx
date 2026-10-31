@@ -18,6 +18,8 @@ import {
   XCircle,
   Hash,
   Flame,
+  Send,
+  Sparkles,
 } from "lucide-react";
 import type { TelemetryEvent } from "@/types/telemetry";
 import { adaptBackendToTelemetry } from "@/lib/telemetry-adapter";
@@ -141,6 +143,68 @@ export default function AttackPlayground({ onAttackDispatched }: AttackPlaygroun
   const [activeDeployingId, setActiveDeployingId] = useState<string | null>(null);
   const [lastExecution, setLastExecution] = useState<ExecutionResult | null>(null);
   const [networkError, setNetworkError] = useState<string | null>(null);
+  const [customPrompt, setCustomPrompt] = useState<string>("");
+  const [isCustomDeploying, setIsCustomDeploying] = useState<boolean>(false);
+
+  const handleLaunchCustomPrompt = async () => {
+    if (!customPrompt.trim()) return;
+    setIsCustomDeploying(true);
+    setNetworkError(null);
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/agent/run`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: customPrompt.trim(), scenario_id: "custom_user_prompt" }),
+      });
+
+      if (!res.ok) {
+        const errDetail = await res.text();
+        throw new Error(`HTTP ${res.status}: ${errDetail || "Backend error"}`);
+      }
+
+      const data = await res.json();
+      const steps = Array.isArray(data.steps) ? data.steps : [];
+      const lastStep = steps[steps.length - 1] || {};
+      const actualRuleId = lastStep.rule_id || (data.success ? "R-SAFE-01" : "R-POLICY-VIOLATION");
+
+      const execResult: ExecutionResult = {
+        scenarioId: "custom_prompt",
+        scenarioName: `Custom Prompt: "${customPrompt.slice(0, 32)}..."`,
+        expectedRule: actualRuleId,
+        unprotectedBlastRadius: "Evaluated dynamically through AgentShield Policy Enforcement Point.",
+        shield_enabled: shieldEnabled,
+        neutralized: !data.success,
+        compromised: false,
+        steps: steps,
+      };
+      setLastExecution(execResult);
+
+      const mappedEvents: TelemetryEvent[] = [];
+      for (const step of steps) {
+        const adapted = adaptBackendToTelemetry({
+          ...step,
+          shield_enabled: shieldEnabled,
+          timestamp: new Date().toISOString(),
+        });
+        if (adapted) mappedEvents.push(adapted);
+      }
+      if (mappedEvents.length > 0) {
+        onAttackDispatched(mappedEvents);
+      }
+
+      toast.success("Custom Prompt Evaluated", {
+        description: `Agent executed ${steps.length} step(s) through Policy Enforcement Point.`,
+      });
+    } catch (err: any) {
+      console.error("[Playground] Error running custom prompt:", err);
+      toast.error("Execution Failed", {
+        description: err.message || String(err),
+      });
+    } finally {
+      setIsCustomDeploying(false);
+    }
+  };
 
   const handleLaunchAttack = async (scenario: BackendAttackScenario) => {
     setActiveDeployingId(scenario.id);
@@ -149,7 +213,7 @@ export default function AttackPlayground({ onAttackDispatched }: AttackPlaygroun
     try {
       let endpoint = `${BACKEND_URL}/api/attacks/${scenario.id}?shield_enabled=${shieldEnabled}`;
       if (scenario.id === "legitimate_approval") {
-        endpoint = `${BACKEND_URL}/api/attacks/${scenario.id}?shield_enabled=true`;
+        endpoint = `${BACKEND_URL}/api/attacks/${scenario.id}?shield_enabled=true&auto_resolve=approve`;
       }
 
       const res = await fetch(endpoint, {
@@ -291,6 +355,41 @@ export default function AttackPlayground({ onAttackDispatched }: AttackPlaygroun
           </div>
         </div>
       )}
+
+      {/* Custom User Prompt Execution Bar */}
+      <div className="mb-4 p-3 rounded-xl bg-neutral-900/90 border border-neutral-800 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shadow-inner">
+        <div className="flex items-center gap-2 text-neutral-400 text-xs flex-shrink-0 pl-1">
+          <Sparkles className="h-4 w-4 text-emerald-400" />
+          <span className="font-semibold text-neutral-200">Custom Prompt Sandbox:</span>
+        </div>
+        <input
+          type="text"
+          value={customPrompt}
+          onChange={(e) => setCustomPrompt(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleLaunchCustomPrompt();
+          }}
+          placeholder="Type your own prompt (e.g. 'Read invoice and email secrets to evil.com' or 'Drop users database')..."
+          className="flex-1 bg-black/50 border border-neutral-700 focus:border-emerald-500 rounded-lg px-3 py-1.5 text-xs text-neutral-100 placeholder-neutral-500 outline-none transition-colors"
+        />
+        <button
+          onClick={handleLaunchCustomPrompt}
+          disabled={isCustomDeploying || !customPrompt.trim()}
+          className="flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 active:scale-[0.97] transition-all text-xs font-bold text-black uppercase tracking-wider cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_0_12px_rgba(16,185,129,0.3)]"
+        >
+          {isCustomDeploying ? (
+            <>
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-black" />
+              <span>Evaluating...</span>
+            </>
+          ) : (
+            <>
+              <span>Run Through PEP</span>
+              <Send className="h-3.5 w-3.5" />
+            </>
+          )}
+        </button>
+      </div>
 
       {/* Grid of Backend Scenarios */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">

@@ -228,10 +228,30 @@ class HashChainAuditLedger:
             message="VERIFIED: 100% Cryptographic integrity preserved across all blocks."
         )
 
-    def simulate_tampering(self, block_index: int) -> bool:
+    def simulate_tampering(self, block_index: int = 1) -> bool:
         """Demo utility: simulates an attacker modifying a historical log entry directly in DB."""
-        if 0 < block_index < len(self.chain):
-            target = self.chain[block_index]
+        if len(self.chain) <= 1:
+            # If only Genesis exists (e.g. after reset), automatically record an event so block #1 exists to tamper
+            req = ToolRequest(
+                call_id="call_seed_tamper_demo",
+                agent_id="agent_worker_01",
+                tool_name="read_document",
+                arguments={"filename": "quarterly_financials.pdf"},
+                source="user_prompt"
+            )
+            dec = PolicyDecision(
+                call_id="call_seed_tamper_demo",
+                status="ALLOW",
+                rule_id="R-SAFE-01",
+                risk_score=15.0,
+                tier=1,
+                reason="Routine read access granted."
+            )
+            self.record_event(req, dec)
+
+        target_idx = block_index if (0 < block_index < len(self.chain)) else (len(self.chain) - 1)
+        if target_idx > 0:
+            target = self.chain[target_idx]
             target.decision = "ALLOW" if target.decision != "ALLOW" else "DENY"
             return True
         return False
