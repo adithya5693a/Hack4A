@@ -9,7 +9,7 @@ const ORIGINAL_BLOCKS: AuditBlock[] = [
     block_id: "#01",
     timestamp: "20:44:02",
     full_timestamp: "2026-10-30T20:44:02.110Z",
-    action: "system_bootstrap: initialize_sandbox_perimeter",
+    action: "System Started: Policy Engine Active",
     agent_id: "Orchestrator-Alpha",
     prev_hash: "0x0000000000000000",
     current_hash: "0x9c42b781f208aa1b44e0192a83f9",

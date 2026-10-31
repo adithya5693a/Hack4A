@@ -95,7 +95,7 @@ export default function CryptographicAuditVisualizer() {
                 Tamper-Proof Activity Log
               </h3>
               <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-forest text-emerald-400 border border-emerald-900/60 uppercase">
-                Cryptographic Trail
+                TAMPER CHECK
               </span>
             </div>
             <p className="text-[10px] text-neutral-400 mt-0.5">
@@ -242,21 +242,21 @@ export default function CryptographicAuditVisualizer() {
                   {/* Hash Signatures Box */}
                   <div className="space-y-1 p-2 rounded bg-neutral-950/90 border border-neutral-800 text-[10px]">
                     <div className="flex items-center justify-between text-neutral-500">
-                      <span>PREV PROOF:</span>
-                      <span className="font-mono text-neutral-400">
+                      <span>Previous Link:</span>
+                      <span className="font-mono text-[9px] text-zinc-500">
                         {truncateHash(block.prev_hash)}
                       </span>
                     </div>
 
                     <div className="flex items-center justify-between">
-                      <span className="text-neutral-500">CURRENT:</span>
+                      <span className="text-neutral-500">Block Hash:</span>
                       <span
-                        className={`font-mono font-bold ${
+                        className={`font-mono text-[9px] ${
                           isBlockTampered
-                            ? "text-crimson animate-pulse"
+                            ? "text-crimson font-bold animate-pulse"
                             : isInvalidFromHere
                             ? "text-red-300"
-                            : "text-emerald-400"
+                            : "text-zinc-500 font-medium"
                         }`}
                       >
                         {truncateHash(block.current_hash)}
