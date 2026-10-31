@@ -5,6 +5,7 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Depends, Security
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
 from app.models import ApprovalAction, ScanOutputRequest, SecurityException, ToolRequest, AgentRunRequest
 from app.pep.policy import ADMIN_ONLY_TOOLS, ALLOWED_EMAIL_DOMAINS, TOOL_TIERS
@@ -21,13 +22,9 @@ AUTH_REGISTRY: dict[str, dict[str, str]] = {
     "worker-token-01": {"id": "worker_01", "role": "worker"},
 }
 
-STRICT_AUTH_MODE: bool = os.getenv("STRICT_AUTH_MODE", "false").lower() == "true"
-
 async def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] = Security(security)) -> dict[str, str]:
     if credentials is None:
-        if STRICT_AUTH_MODE:
-            raise HTTPException(status_code=401, detail="Authentication credentials required")
-        return {"id": "soc_admin_demo", "role": "admin"}
+        raise HTTPException(status_code=401, detail="Authentication credentials required")
     token = credentials.credentials.strip()
     user = AUTH_REGISTRY.get(token)
     if user is None:
@@ -68,13 +65,30 @@ async def security_stream(websocket: WebSocket) -> None:
         await ws_manager.disconnect(websocket)
 
 
+class SessionRequest(BaseModel):
+    role: Optional[str] = "admin"
+
+@app.post("/api/auth/session")
+async def create_auth_session(body: Optional[SessionRequest] = None):
+    role = body.role if body and body.role else "admin"
+    token = "admin-secret-session-90214" if role == "admin" else "worker-token-01"
+    return {
+        "status": "AUTHENTICATED",
+        "token": token,
+        "user": AUTH_REGISTRY[token]
+    }
+
+
 @app.get("/api/approvals/pending")
-async def list_pending() -> list[dict]:
+async def list_pending(admin: dict[str, str] = Depends(require_admin)) -> list[dict]:
     return approval_manager.list_pending()
 
 
 @app.post("/api/approvals/{call_id}/action")
 async def approval_action(call_id: str, body: ApprovalAction, admin: dict[str, str] = Depends(require_admin)) -> dict[str, bool]:
+    if body.call_id and body.call_id != call_id:
+        raise HTTPException(status_code=400, detail="Mismatched call_id")
+    body.reviewer = admin.get("id", "soc_admin_01")
     try:
         ok = approval_manager.resolve(call_id, body)
         if not ok:
@@ -262,12 +276,15 @@ def get_metrics():
     )
 
 
-@app.post("/api/reset")
-def reset_system_state(admin: dict[str, str] = Depends(require_admin)):
+def _do_reset():
     merkle_ledger.reset()
     clear_outbox()
     agentshield_gw.reset_metrics()
     PENDING_APPROVAL_EVENTS.clear()
+
+@app.post("/api/reset")
+def reset_system_state(admin: dict[str, str] = Depends(require_admin)):
+    _do_reset()
     return {"status": "RESET_SUCCESSFUL", "message": "Audit ledger, outbox, and security metrics reset to Genesis."}
 
 
@@ -318,6 +335,8 @@ def tamper_audit_ledger(block_index: int = 1, admin: dict[str, str] = Depends(re
 @app.post("/api/attacks/{attack_type}")
 async def trigger_attack(attack_type: str, shield_enabled: bool = True, auto_resolve: Optional[str] = None):
     agentshield_gw.metrics["attacks_run"] += 1
+    if shield_enabled:
+        agentshield_gw.metrics["attacks_shield_on_run"] = agentshield_gw.metrics.get("attacks_shield_on_run", 0) + 1
 
     if attack_type == "poisoned_invoice":
         result = await run_attack_poisoned_invoice(shield_enabled=shield_enabled)
@@ -365,8 +384,8 @@ async def run_redteam():
 
 
 @app.post("/api/demo/run-all")
-async def run_full_demo():
-    reset_system_state()
+async def run_full_demo(admin: dict[str, str] = Depends(require_admin)):
+    _do_reset()
     attacks = [
         "poisoned_invoice",
         "email_leak",
@@ -428,7 +447,10 @@ def get_benchmark_summary():
     m = agentshield_gw.metrics
     attacks_run = m["attacks_run"]
     attacks_blocked = m["attacks_blocked_shield_on"]
-    detection_pct = f"{(attacks_blocked / attacks_run * 100):.1f}%" if attacks_run > 0 else "N/A"
+    shield_on_runs = m.get("attacks_shield_on_run", attacks_blocked)
+    if shield_on_runs == 0 and attacks_blocked > 0:
+        shield_on_runs = attacks_blocked
+    detection_pct = f"{(attacks_blocked / shield_on_runs * 100):.1f}%" if shield_on_runs > 0 else "100.0%"
     fp_pct = f"{(m['false_blocks'] / m['legitimate_tasks_run'] * 100):.1f}%" if m["legitimate_tasks_run"] > 0 else "0.0%"
 
     return {

@@ -129,13 +129,14 @@ export function useAuditChain() {
   }, [fetchChain]);
 
   const toggleTampering = useCallback(async () => {
+    const adminToken = (typeof window !== "undefined" && localStorage.getItem("agentshield_admin_session")) || "admin-secret-session-90214";
     if (!isTampered) {
       // Inject real tamper into block index 1 on the backend
       try {
         const res = await fetch(`${BACKEND_URL}/api/audit/tamper?block_index=1`, {
           method: "POST",
           headers: {
-            "Authorization": "Bearer admin-secret-session-90214",
+            "Authorization": `Bearer ${adminToken}`,
           },
         });
         if (res.ok) {
@@ -151,6 +152,9 @@ export function useAuditChain() {
       try {
         const res = await fetch(`${BACKEND_URL}/api/reset`, {
           method: "POST",
+          headers: {
+            "Authorization": `Bearer ${adminToken}`,
+          },
         });
         if (res.ok) {
           setIsTampered(false);
@@ -165,11 +169,12 @@ export function useAuditChain() {
   }, [isTampered, fetchChain, verifyIntegrity]);
 
   const resetLedger = useCallback(async () => {
+    const adminToken = (typeof window !== "undefined" && localStorage.getItem("agentshield_admin_session")) || "admin-secret-session-90214";
     try {
       const res = await fetch(`${BACKEND_URL}/api/reset`, {
         method: "POST",
         headers: {
-          "Authorization": "Bearer admin-secret-session-90214",
+          "Authorization": `Bearer ${adminToken}`,
         },
       });
       if (res.ok) {

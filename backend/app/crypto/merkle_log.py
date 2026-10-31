@@ -37,8 +37,13 @@ def make_args_preview(args: Dict[str, Any], max_len: int = 80) -> str:
         return "{}"
 
 
+class AuditPersistenceError(Exception):
+    """Raised when writing to the append-only audit ledger file fails."""
+    pass
+
+
 class HashChainAuditLedger:
-    """Immutable SHA-256 hash-chained log linking each decision block to the previous hash."""
+    """Tamper-evident SHA-256 hash-chained log linking each decision block to the previous hash."""
 
     def __init__(self):
         self.chain: List[AuditBlock] = []
@@ -49,7 +54,7 @@ class HashChainAuditLedger:
         return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
     def _load_or_init_ledger(self):
-        """Loads durable ledger from JSONL if present and verified, otherwise initializes Genesis."""
+        """Loads durable ledger from JSONL if present. Preserves corrupt ledger to report integrity failure."""
         if STORAGE_FILE.exists():
             loaded_blocks: List[AuditBlock] = []
             try:
@@ -61,9 +66,8 @@ class HashChainAuditLedger:
                             loaded_blocks.append(AuditBlock(**data))
                 if loaded_blocks:
                     self.chain = loaded_blocks
-                    verification = self.verify_integrity()
-                    if verification.is_valid:
-                        return
+                    # Preserve loaded chain (even if corrupt) so verify_integrity accurately reports status
+                    return
             except Exception:
                 pass
         self._create_genesis_block()
@@ -105,13 +109,13 @@ class HashChainAuditLedger:
         self._persist_block(genesis_block, mode="w")
 
     def _persist_block(self, block: AuditBlock, mode: str = "a"):
-        """Durable append to audit_ledger.jsonl."""
+        """Durable append to audit_ledger.jsonl. Raises AuditPersistenceError on failure to fail closed."""
         try:
             STORAGE_DIR.mkdir(parents=True, exist_ok=True)
             with open(STORAGE_FILE, mode, encoding="utf-8") as f:
                 f.write(block.model_dump_json() + "\n")
-        except Exception:
-            pass
+        except Exception as e:
+            raise AuditPersistenceError(f"Failed to persist audit block {block.index} to disk: {e}") from e
 
     def _calculate_block_hash(
         self,

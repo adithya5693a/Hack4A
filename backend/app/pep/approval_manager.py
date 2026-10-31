@@ -121,12 +121,19 @@ class ApprovalManager:
         for call_id, item in snapshot:
             request: ToolRequest = item["request"]
             decision: PolicyDecision = item["decision"]
+            # Redact sensitive values from pending arguments preview to prevent secret exposure
+            redacted_args = {}
+            for k, v in (request.arguments or {}).items():
+                if any(sec in k.lower() for sec in ["key", "secret", "password", "token", "credential", "auth"]):
+                    redacted_args[k] = "***REDACTED***"
+                else:
+                    redacted_args[k] = v
             pending.append(
                 {
                     "call_id": call_id,
                     "agent_id": request.agent_id,
                     "tool_name": request.tool_name,
-                    "arguments": request.arguments,
+                    "arguments": redacted_args,
                     "risk_score": decision.risk_score,
                     "reasons": decision.reasons,
                     "created_at": item["created_at"],

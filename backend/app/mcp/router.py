@@ -13,6 +13,7 @@ from pydantic import BaseModel
 from app.models import ToolRequest, DecisionStatus
 from app.state import gateway
 from app.agent.tools import TOOLS_REGISTRY
+from app.pep.policy import AGENT_REGISTRY
 
 mcp_router = APIRouter(prefix="/api/mcp", tags=["MCP Gateway"])
 
@@ -81,6 +82,29 @@ async def mcp_rpc(request: MCPRequest):
         }
 
     agent_id = params.agent_id or "agent_worker_01"
+    if agent_id not in AGENT_REGISTRY:
+        return {
+            "jsonrpc": "2.0",
+            "error": {
+                "code": -32003,
+                "message": f"SecurityPolicyViolation [R-IDENTITY-01]: Unregistered agent identity '{agent_id}'",
+                "data": {"rule_id": "R-IDENTITY-01", "decision": "DENY", "risk_score": 100.0}
+            },
+            "id": request.id
+        }
+
+    # Anti-Spoofing: Unauthenticated callers cannot claim admin/system roles
+    if AGENT_REGISTRY[agent_id]["role"] in ["admin", "system"]:
+        return {
+            "jsonrpc": "2.0",
+            "error": {
+                "code": -32003,
+                "message": f"SecurityPolicyViolation [R-IDENTITY-SPOOF]: Privileged agent identity '{agent_id}' requires verified administrative session",
+                "data": {"rule_id": "R-IDENTITY-SPOOF", "decision": "DENY", "risk_score": 100.0}
+            },
+            "id": request.id
+        }
+
     tool_req = ToolRequest(
         call_id=f"mcp_{uuid.uuid4().hex[:8]}",
         agent_id=agent_id,
