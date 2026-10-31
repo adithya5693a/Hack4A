@@ -1,41 +1,65 @@
 # AgentShield · Zero-Trust Policy Enforcement Point & Cryptographic Audit Ledger
 
 > **Parallax Hackathon 2026 — Track 01: Secure the Agent, Not Just the Prompt**  
-> *A deterministic, server-enforced JSON-RPC 2.0 Policy Enforcement Point (PEP) and tamper-evident SHA-256 hash-chained audit ledger that stops prompt injection, tool tampering, and privilege escalation before execution occurs.*
+> *A deterministic, server-enforced JSON-RPC 2.0 Policy Enforcement Point (PEP) and tamper-evident SHA-256 hash-chained audit ledger that intercepts autonomous agent tool calls before execution.*
 
 [![Pytest Suite](https://img.shields.io/badge/Pytest-64%2F64%20Passing%20(100%25)-emerald?style=for-the-badge&logo=pytest)](https://docs.pytest.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-PEP%20Gateway-009688?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com)
 [![Next.js](https://img.shields.io/badge/Next.js-16%20Turbopack-black?style=for-the-badge&logo=next.js)](https://nextjs.org)
-[![Security Standard](https://img.shields.io/badge/Architecture-Zero--Trust%20PEP-blue?style=for-the-badge)](https://csrc.nist.gov/publications/detail/sp/800-207/final)
-[![Audit Ledger](https://img.shields.io/badge/Ledger-SHA--256%20Hash%20Chained-orange?style=for-the-badge)](https://en.wikipedia.org/wiki/Merkle_tree)
+[![Audit Ledger](https://img.shields.io/badge/Audit%20Chain-SHA--256%20Hash%20Chained-orange?style=for-the-badge)](https://en.wikipedia.org/wiki/Cryptographic_hash_function)
 
 ---
 
-## 🔗 Key Links & Environments
+## Key Links & Environments
 
 | Resource | URL | Description |
 | :--- | :--- | :--- |
-| 🌐 **Vercel Live Production App** | [https://agentshield-sooty.vercel.app](https://agentshield-sooty.vercel.app) | Publicly deployed SOC dashboard with live visualizer and real-time state. |
-| 💻 **GitHub Repository** | [https://github.com/adithya5693a/Hack4A](https://github.com/adithya5693a/Hack4A) | Official repository with full source code, backend tests, and documentation. |
-| 🖥️ **Local Evaluation Environment** | **Dashboard:** [http://localhost:3000](http://localhost:3000)<br>**PEP Engine:** [http://127.0.0.1:8000](http://127.0.0.1:8000) | 100% deterministic, offline execution with sub-millisecond local telemetry. |
-| 📑 **Interactive OpenAPI / Swagger** | [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) | Live FastAPI documentation with authenticated execution schemas. |
+| **Vercel Web App** | [https://agentshield-sooty.vercel.app](https://agentshield-sooty.vercel.app) | Public Next.js dashboard deployment. *(Connects to PEP via local tunnel or `NEXT_PUBLIC_BACKEND_URL`)* |
+| **GitHub Repository** | [https://github.com/adithya5693a/Hack4A](https://github.com/adithya5693a/Hack4A) | Source code, automated tests, and implementation history. |
+| **Local Evaluation** | **UI:** [http://localhost:3000](http://localhost:3000)<br>**PEP:** [http://127.0.0.1:8000](http://127.0.0.1:8000) | Local runtime for judging evaluation with live WebSocket telemetry. |
+| **OpenAPI / Swagger** | [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) | Interactive FastAPI documentation for JSON-RPC and REST endpoints. |
 
 ---
 
-## 🚨 The Threat: Why Prompt-Based Guardrails Fail
+## Results at a Glance
 
-Traditional AI defenses rely on **"System Prompting"** or **"LLM Judge Wrappers"** (e.g., Llama Guard) to inspect conversational text. In autonomous agent architectures, this paradigm fundamentally fails:
-- **Indirect Prompt Injection:** An untrusted document, invoice, or web page contains embedded instructions that hijack the agent's reasoning.
-- **Probabilistic Defense:** Neural network guardrails are stochastic; variations in encoding or phrasing bypass them.
-- **Client-Side Spoofing:** When agent runtimes allow callers to supply their own roles (`role="admin"`), sources (`source="user_prompt"`), or taint flags, the execution boundary is completely broken.
+The following numbers were produced by the automated test suite and live evaluation endpoints (`POST /api/demo/run-all`, `POST /api/redteam/run`):
+
+| Metric | Measured Value | Verification Source |
+| :--- | :---: | :--- |
+| **Automated Unit & Integration Tests** | **64 passed, 0 failed** (0.54s) | `pytest tests/` in `backend/` |
+| **Attacks Compromised (Shield OFF)** | **7 / 7 (100%)** | `POST /api/demo/run-all` |
+| **Attacks Intercepted (Shield ON)** | **7 / 7 (100%)** | `POST /api/demo/run-all` |
+| **Red-Team Attack Variants Tested** | **15 variants** | `POST /api/redteam/run` *(Self-written test harness)* |
+| **Red-Team Bypasses (Shield ON)** | **0 / 15 (0.0% bypass rate)** | `POST /api/redteam/run` |
+| **Legitimate Tasks Allowed** | **5 / 6 allowed** | `POST /api/demo/run-all` |
+| **Legitimate Task Rejected** | **1 / 6 denied** *(by human admin)* | Task `LEGIT-06` explicitly rejected by operator |
+| **False Positive Blocks on Safe Tasks** | **0** | `POST /api/demo/run-all` |
+| **Cryptographic Hash Chain Status** | **100% verified** | `GET /api/audit/verify` |
 
 ---
 
-## 🛡️ The AgentShield Solution: Zero-Trust Runtime Interception
+## Threat Model
 
-AgentShield operates under a strict principle: **Never trust the model. Secure the execution boundary.**
+AgentShield models security boundaries strictly at the tool-execution interface:
 
-By decoupling security enforcement from model cognition and placing a deterministic **Policy Enforcement Point (PEP)** in front of external tools and APIs, AgentShield guarantees that no unauthorized, tainted, or replayed tool action can ever execute.
+- **Attacker Profile:** Any entity capable of supplying content that an autonomous agent ingests. This includes indirect prompt injection hidden inside billing invoices, inbound customer support emails, untrusted web scraping targets, or poisoned tool outputs.
+- **Protected Assets:**
+  - Production credentials, API tokens, and database connection strings.
+  - Sensitive internal data stores (user records, financial ledgers).
+  - Outbound communication channels (corporate email egress).
+  - High-privilege administrative tools (database drop, shell execution, key rotation).
+- **Trust Boundary:** The interface between the autonomous agent and the tool execution gateway. Within the modelled boundary—where all tool calls are routed through the PEP—caller claims (`agent_id`, `role`, `parent_agent_id`, `source`, `tainted`) are ignored. Identity, authorization tier, and tainted provenance are established server-side.
+- **Out of Scope:**
+  - Conversational jailbreaks that produce offensive or misleading text without invoking a tool.
+  - Attacks originating from a compromised host machine running the PEP.
+  - Malicious activity carried out by fully authenticated human administrators within their granted permissions.
+
+---
+
+## Architectural Workflow
+
+AgentShield inserts a deterministic **Policy Enforcement Point (PEP)** between agent reasoning and external tool execution:
 
 ```
  ┌──────────────────────┐       JSON-RPC 2.0 / MCP        ┌──────────────────────────────────────┐
@@ -47,8 +71,8 @@ By decoupling security enforcement from model cognition and placing a determinis
                       │                                                                                        │
                       ▼                                                                                        ▼
     ┌──────────────────────────────────┐                                                     ┌──────────────────────────────────┐
-    │     Multi-Tier Risk Scorer       │                                                     │   Cryptographic Audit Ledger     │
-    │  - Tainted Provenance Tracking   │                                                     │  - SHA-256 Hash Chain Linking    │
+    │     Multi-Tier Risk Scorer       │                                                     │ Tamper-Evident SHA-256 Ledger    │
+    │  - Tainted Provenance Tracking   │                                                     │  - Linear SHA-256 Hash Chain     │
     │  - Server-Side Agent Registry    │                                                     │  - Tamper Detection Engine       │
     │  - Email Domain Exact Whitelist  │                                                     │  - Fail-Closed Disk Persistence  │
     └─────────────────┬────────────────┘                                                     └──────────────────────────────────┘
@@ -58,212 +82,163 @@ By decoupling security enforcement from model cognition and placing a determinis
    [ALLOW / EXECUTE]        [REQUIRE_APPROVAL] ───> ┌───────────────────────────────────────┐
          │                                          │ Human-in-the-Loop (HITL) Gate         │
          ▼                                          │ - Replay-Resistant Atomic Token       │
-    External Tool                                   │ - Authenticated SOC Session Required  │
- (Database, Bash, Email)                            │ - 120s Fail-Closed Timeout Deny       │
+    Simulated Tool                                  │ - Authenticated SOC Session Required  │
+ (Database, Shell, Email)                           │ - 120s Fail-Closed Timeout Deny       │
                                                     └───────────────────────────────────────┘
 ```
 
+Within the modelled boundary (every tool call passes through the PEP), unauthorized, tainted, or replayed tool actions are denied.
+
 ---
 
-## ✨ Core Security Guarantees & Features
+## Core Security Features
 
 ### 1. Server-Derived Identity & Anti-Spoofing Lineage
-- **No Request-Body Trust:** Request payloads cannot define `agent_id`, `role`, `parent_agent_id`, or `tainted`. 
-- **Server Registry Lookup:** The gateway cross-references the caller against the server-maintained `AGENT_REGISTRY`. Unregistered identities fail closed (`R-IDENTITY-01`); attempts to spoof `agent_admin` via unauthenticated RPC trigger `R-IDENTITY-SPOOF`.
+- Request payloads cannot self-declare permissions. The PEP cross-references the caller's authenticated session against `AGENT_REGISTRY`.
+- Unregistered identities are denied (`R-IDENTITY-01`). Unauthenticated callers attempting to claim administrative identities via MCP trigger `R-IDENTITY-SPOOF`.
 
-### 2. Tainted Provenance Propagation
-- When an agent retrieves untrusted content (e.g., invoices, emails, external web data), the server marks the agent lineage as **Tainted**.
-- Even if subsequent prompts claim to be clean, tainted provenance persists across multi-hop sub-agents, preventing exfiltration to untrusted domains (`R-TAINT-01`, `R-UNTRUSTED-INTENT-01`).
+### 2. Tainted Provenance Tracking
+- Ingesting untrusted content (e.g., invoice data or external web pages) marks the agent's execution context as **Tainted**.
+- Taint state propagates across sub-agent delegations, blocking subsequent exfiltration to external or lookalike destinations (`R-TAINT-01`, `R-UNTRUSTED-INTENT-01`).
 
 ### 3. Tamper-Evident SHA-256 Hash-Chained Audit Ledger
-- Every policy decision is canonicalized and hashed into an append-only cryptographic ledger (`data/audit_ledger.jsonl`).
-- Each block's hash incorporates the **previous block's hash**, **agent ID**, **role**, **decision**, **rule ID**, **risk score**, and a **SHA-256 hash of the tool arguments**.
-- The `GET /api/audit/verify` endpoint verifies the mathematical chain from Genesis to the chain head. If a historical log entry is altered, the entire chain severs (`CHAIN BROKEN`).
+- Every policy decision is canonicalized and linked into an append-only hash chain (`data/audit_ledger.jsonl`).
+- Each block hash covers: `index`, `timestamp`, `call_id`, `agent_id`, `agent_role`, `tool_name`, `arguments_hash`, `decision`, `rule_id`, `risk_score`, and `previous_hash`.
+- The `GET /api/audit/verify` endpoint verifies the hash chain from Genesis ($O(N)$). If a stored record is modified, verification fails immediately with `CHAIN BROKEN`.
+- *Note:* The ledger is **tamper-evident**, not tamper-proof: an adversary with full write access to the host disk could rewrite history by recomputing all hashes. Anchoring the chain head to an external immutable timestamp or remote log service is identified as future work. *(The file `merkle_log.py` is a historical module name and implements a linear hash chain rather than a Merkle tree).*
 
-### 4. Fail-Closed Audit Persistence
-- If the ledger disk write fails (simulated disk exhaustion or I/O failure), the PEP immediately halts tool execution and denies the call with **`R-AUDIT-FAIL`**. Execution never proceeds without an immutable audit record.
+### 4. Fail-Closed Audit Handling
+- In `backend/app/crypto/merkle_log.py`, disk persistence failures raise `AuditPersistenceError`.
+- If an audit block cannot be durably written to disk, the PEP intercepts the exception and denies tool execution with **`R-AUDIT-FAIL`**. Execution never occurs without a confirmed audit record.
 
-### 5. Atomic Replay-Resistant HITL Safety Gate
-- Borderline or high-risk operations (e.g., database schema changes, financial transactions) trigger a **Human-in-the-Loop (HITL)** quarantine.
-- Approvals require an authenticated administrator (`Authorization: Bearer admin-secret-session-90214`).
-- Approvals are single-use; replayed approval actions fail with `409 Conflict` (`ApprovalAlreadyConsumedError`). Unresolved requests timeout and default to `DENY`.
-
-### 6. Secret Redaction in SOC Queue
-- The `GET /api/approvals/pending` queue automatically masks sensitive fields (`password`, `key`, `token`, `secret`, `credential`) with `***REDACTED***` to prevent administrative credential leaks.
+### 5. Replay-Resistant HITL Safety Gate
+- Operations requiring human confirmation (Tier 2/3 tools or borderline risk scores) generate an in-memory event with a 120-second timeout.
+- Approvals require a verified SOC session (`Authorization: Bearer admin-secret-session-90214` in demo mode).
+- Approvals are single-use; subsequent resolution attempts fail with `409 Conflict` (`ApprovalAlreadyConsumedError`). Unresolved requests timeout and fail closed to `DENY` (`R-TIMEOUT`).
+- Pending approval previews in `GET /api/approvals/pending` redact sensitive argument keys (`password`, `key`, `token`, `secret`) to prevent credential leakage.
 
 ---
 
-## 🎯 8 Realistic Attack Scenarios Tested & Proven
+## Verified Attack Scenarios & Active Rule IDs
 
-| # | Attack Scenario | Threat Vector | Shield OFF (Without PEP) | Shield ON (With AgentShield) | Rule Enforced |
+The table below reflects the **actual rules fired** during live execution of the 8 demonstration scenarios:
+
+| # | Attack Scenario | Threat Vector | Shield OFF (Without PEP) | Shield ON (With PEP) | Live Rule ID Enforced |
 | :-: | :--- | :--- | :---: | :---: | :--- |
-| **1** | **Poisoned Invoice** | Indirect Prompt Injection exfiltrating billing data | **COMPROMISED** (Data leaked) | **BLOCKED (0% Blast Radius)** | `R-UNTRUSTED-INTENT-01` |
-| **2** | **Corporate Email Leak** | Lookalike domain spoofing (`evilcompany.com`) | **COMPROMISED** (Email sent) | **BLOCKED (0% Blast Radius)** | `R-EGRESS-01` |
-| **3** | **Sensitive Data Exfiltration** | Reading shadow files (`/etc/shadow`, AWS keys) | **COMPROMISED** (Keys dumped) | **BLOCKED (0% Blast Radius)** | `R-SENSITIVE-READ-01` |
-| **4** | **Privilege Escalation** | Worker agent claiming supervisor permissions | **COMPROMISED** (DB destroyed) | **BLOCKED (0% Blast Radius)** | `R-RBAC-01` |
-| **5** | **Database Wipe** | Untrusted prompt invoking destructive drops | **COMPROMISED** (Tables purged) | **BLOCKED (0% Blast Radius)** | `R-ADMIN-TOOL-01` |
-| **6** | **Shadow Tool Invocation** | Unregistered tool name execution | **COMPROMISED** (Tool executed) | **BLOCKED (0% Blast Radius)** | `R-REG-01` |
-| **7** | **Tampered Schema / SQLi** | Dynamic SQL injection bypassing prompts | **COMPROMISED** (Data injected) | **BLOCKED (0% Blast Radius)** | `R-TAINT-01` |
-| **8** | **Destructive Shell Command** | Remote code execution (`rm -rf`, `chmod 777`) | **COMPROMISED** (Shell run) | **BLOCKED (0% Blast Radius)** | `R-TIER3-CRITICAL` |
+| **1** | **Poisoned Invoice** | Indirect Prompt Injection exfiltrating billing data | **COMPROMISED** | **DENIED** | `R-UNTRUSTED-INTENT-01` |
+| **2** | **Corporate Email Leak** | Tainted context exfiltrating data via email | **COMPROMISED** | **DENIED** | `R-UNTRUSTED-INTENT-01` |
+| **3** | **Sensitive Data Read** | Reading shadow files (`/etc/shadow`, AWS keys) | **COMPROMISED** | **DENIED** | `R-IDENTITY-01` |
+| **4** | **Privilege Escalation** | Worker agent attempting admin key rotation | **COMPROMISED** | **DENIED** | `R-RBAC-01` |
+| **5** | **Database Wipe** | Untrusted prompt invoking destructive drops | **COMPROMISED** | **DENIED** | `R-IDENTITY-01` |
+| **6** | **Tampered Tool Schema** | Runtime modification of tool schema without signature | **COMPROMISED** | **DENIED** | `R-SIG-01` |
+| **7** | **Destructive Shell Command** | Remote maintenance shell payload injection | **COMPROMISED** | **DENIED** | `R-IDENTITY-01` |
+| **8** | **Shadow Tool Invocation** | Execution of unregistered debug tool | **COMPROMISED** | **DENIED** | `R-REG-01` *(Tested in Red-Team VAR-11)* |
 
 ---
 
-## 🏆 5-Step Live Judge Demonstration Flow
+## Brochure Requirements Mapping
 
-When demonstrating AgentShield live to hackathon judges, follow this sequence:
-
-1. **Step 1: Authenticate Demo SOC Session**  
-   Click **"Demo SOC Session"** on the top header. This issues a verified backend token (`admin-secret-session-90214`) via `POST /api/auth/session`.
-2. **Step 2: Run Poisoned Invoice (Shield ON)**  
-   Trigger the attack scenario. Observe that Hop 2 is intercepted instantly with **`R-UNTRUSTED-INTENT-01`**, resulting in a **0% blast radius**.
-3. **Step 3: Toggle Shield OFF & Rerun**  
-   Run the exact same attack with Shield OFF. Observe that the payload succeeds, rendering **`COMPROMISED`** across both the hop trajectory and the live WebSocket telemetry feed.
-4. **Step 4: Verify Cryptographic Log Integrity**  
-   Click **"Verify Log Integrity"** in the Cryptographic Audit visualizer. The backend recalculates SHA-256 block hashes from Genesis, returning a green **`VERIFIED`** status.
-5. **Step 5: Simulate Database Tampering**  
-   Click **"Simulate Tampering"**. This injects an in-place modification to historical Block #1. The integrity checker immediately flags **`CHAIN BROKEN: Pointer broken at Block #1`**, proving mathematical tamper-evidence.
-
----
-
-## 📁 Repository Structure & Codebase Tour
-
-```
-Hack4A/
-├── backend/                              # Python 3.14 FastAPI Policy Enforcement Point
-│   ├── app/
-│   │   ├── main.py                       # REST & WebSocket API, route protection, auth registry
-│   │   ├── models.py                     # Pydantic schemas (ToolRequest, PolicyDecision, AuditBlock)
-│   │   ├── state.py                      # Global state singletons (gateway, approval_manager, ws_manager)
-│   │   ├── ws_manager.py                 # Real-time WebSocket connection manager & broadcaster
-│   │   ├── pep/
-│   │   │   ├── gateway.py                # Core PEP interceptor, provenance tracking & fail-closed logic
-│   │   │   ├── policy.py                 # Centralized agent registry, RBAC tiers & domain allowlists
-│   │   │   ├── approval_manager.py       # Replay-resistant HITL approval manager & argument redaction
-│   │   │   ├── rbac.py                   # Role-based tool access control & rate-limiting checks
-│   │   │   └── risk_scorer.py            # Multi-tier risk calculator & token inspection
-│   │   ├── crypto/
-│   │   │   ├── merkle_log.py             # SHA-256 HashChainAuditLedger with JSONL append-only persistence
-│   │   │   └── signer.py                 # HMAC-SHA256 tool manifest signer & verification
-│   │   ├── mcp/
-│   │   │   └── router.py                 # JSON-RPC 2.0 MCP tool gateway with identity anti-spoofing
-│   │   └── agent/
-│   │       ├── attacks.py                # 8 deterministic red-team exploit scenarios
-│   │       ├── core.py                   # Autonomous agent runtime & multi-hop tool execution
-│   │       ├── tools.py                  # Standard simulated tool implementations & outbox
-│   │       └── redteam.py                # Automated red-team benchmarking harness
-│   ├── data/
-│   │   └── audit_ledger.jsonl            # Append-only on-disk cryptographic audit trail
-│   ├── tests/                            # 64 Automated Pytest Suite
-│   │   ├── test_security_boundaries.py   # Auth 401/403, anti-spoofing, secret redaction, fail-closed
-│   │   ├── test_hardening_reviewer.py    # Strict auth dependencies & token verification
-│   │   ├── test_approval_flow.py         # HITL approvals, timeout defaults, and replay guards
-│   │   ├── test_judge_audit.py           # Merkle chain integrity & tamper detection verification
-│   │   ├── test_mcp_and_evasion.py       # MCP JSON-RPC router & evasion token detection
-│   │   ├── test_member2_suite.py         # Comprehensive multi-scenario pipeline tests
-│   │   ├── test_rbac.py                  # Role permissions & tier-based access control
-│   │   └── test_risk_scorer.py           # Multi-factor risk scoring equations
-│   └── requirements.txt                  # Python dependencies (FastAPI, Uvicorn, Pydantic, Pytest)
-├── app/                                  # Next.js 16 App Router Frontend
-│   ├── layout.tsx                        # Global layout, fonts, and dark theme wrapper
-│   ├── page.tsx                          # Single-pane-of-glass SOC Dashboard & Judge Tour
-│   ├── globals.css                       # High-tech Cyberpunk/Steel design theme
-│   └── api/                              # Next.js API edge proxy handlers
-├── components/                           # Modular React UI Components
-│   ├── AttackPlayground.tsx              # Interactive red-team scenario runner & blast radius card
-│   ├── CryptographicAuditVisualizer.tsx  # Interactive SHA-256 Merkle chain visualizer & tamper injector
-│   ├── GoogleAuthWidget.tsx              # SOC Administrator session widget (Demo SOC Session)
-│   ├── HITLApprovalModal.tsx             # Real-time Human-in-the-Loop quarantine modal
-│   ├── LiveTelemetryStream.tsx           # Real-time WebSocket tool execution log
-│   ├── MCPPolicyDrawer.tsx               # Drawer displaying server-side tool tiers & policy schemas
-│   ├── SOCHeader.tsx                     # Top navigation bar with dynamic PEP ONLINE indicator & latency
-│   └── StatusBadge.tsx                   # High-contrast status badges (ALLOWED, BLOCKED, COMPROMISED)
-├── hooks/                                # Custom React Hooks
-│   ├── useAuditChain.ts                  # Audit chain fetch, verify, tamper, and reset state
-│   └── useSecurityStream.ts              # Native WebSocket streaming client for live PEP telemetry
-└── lib/
-    ├── api-config.ts                     # Dynamic URL resolvers (localhost vs production tunnel)
-    └── telemetry-adapter.ts              # Event status mapping (SHIELD_BYPASS -> COMPROMISED)
-```
+| Track 01 Requirement | Status | Implementation Details |
+| :--- | :---: | :--- |
+| **Simulated Autonomous Agent** | **Implemented** | `backend/app/agent/core.py`: multi-hop agent executing tool chains. |
+| **At Least Two Tools or Permissions** | **Implemented** | 7 tools across 3 risk tiers (`read_document`, `query_database`, `execute_bash`, `send_email`, etc.). |
+| **Policy Enforcement Point (PEP)** | **Implemented** | `backend/app/pep/gateway.py`: authoritative interceptor for all tool requests. |
+| **Audit Log of Agent Actions** | **Implemented** | `backend/app/crypto/merkle_log.py`: linear SHA-256 hash-chained ledger. |
+| **Four Attack Scenarios** | **Implemented** | 8 implemented scenarios (exceeding minimum 4): prompt injection, email exfiltration, SQLi/wipe, privilege escalation. |
+| **Allow / Deny / Require-Approval** | **Implemented** | `backend/app/models.py`: `DecisionStatus` with full tri-state enforcement. |
+| **Human-in-the-Loop Confirmation** | **Implemented** | `backend/app/pep/approval_manager.py`: interactive approval queue with timeout. |
+| **Fail-Closed Guarantees** | **Implemented** | Missing auth $\to$ 401; unhandled error $\to$ DENY; audit write error $\to$ `R-AUDIT-FAIL`. |
+| **MCP Tool Gateway (Extension)** | **Implemented** | `backend/app/mcp/router.py`: JSON-RPC 2.0 `tools/call` and `tools/list` interceptor. |
+| **Tool Permission Profiles (Extension)** | **Implemented** | `backend/app/pep/policy.py`: `ROLE_PERMISSIONS` mapping 6 roles to allowed tools. |
+| **Signed Tool Manifests (Extension)** | **Implemented** | `backend/app/crypto/signer.py`: HMAC-SHA256 tool manifest signatures verified via `R-SIG-01`. |
+| **Cross-Agent Lineage Tracking** | **Implemented** | Multi-hop lineage tracking with recursive parent taint checks (`R-TAINT-01`). |
+| **Risk-Aware Approval Queue** | **Implemented** | Real-time queue displaying risk scores, rule IDs, and redacted argument previews. |
+| **External Timestamp Anchoring** | *Not Implemented* | Planned future work; current hash chain is stored locally in `data/audit_ledger.jsonl`. |
 
 ---
 
-## ⚡ Local Setup & Reproduction
+## 5-Step Judge Demonstration Flow
 
-### Prerequisites
-- Python 3.11+ (Python 3.14 compatible)
-- Node.js 18+ (Node.js 20+ recommended)
+Follow this exact sequence during live demonstration:
 
-### 1. Launch the FastAPI PEP Gateway
+1. **Step 1: Authenticate SOC Session**  
+   Click **"Demo SOC Session"** on the header. This acquires an authenticated admin session (`Authorization: Bearer admin-secret-session-90214`) via `POST /api/auth/session`.  
+   *(Note: The bearer token is hardcoded for demo simplicity in `AUTH_REGISTRY`. A production deployment would load signed secrets from secure environment variables).*
+2. **Step 2: Run Poisoned Invoice with Shield OFF**  
+   Trigger the attack scenario with the shield disabled. The simulated attack succeeds, displaying **`COMPROMISED`** across both the hop trajectory and the live telemetry stream.
+3. **Step 3: Run Poisoned Invoice with Shield ON**  
+   Rerun the attack with the shield enabled. Hop 2 is intercepted by the PEP, displaying **`DENIED`** under rule **`R-UNTRUSTED-INTENT-01`** with a **0% blast radius**.
+4. **Step 4: Run Legitimate Task with Live Approval**  
+   Trigger the legitimate maintenance action. The system quarantines the tool and prompts the HITL modal. Click **"Allow"** to authorize execution once; verify the action executes and cannot be replayed.
+5. **Step 5: Verify Log Integrity & Simulate Tampering**  
+   - In the Cryptographic Audit visualizer, click **"Verify Log Integrity"** $\to$ returns **`Integrity Verified`** from `GET /api/audit/verify`.
+   - Click **"Simulate Tampering"** to modify historical Block #1 $\to$ returns **`CHAIN BROKEN`**, proving mathematical tamper-detection.
+6. **Step 6: Review Live Metrics**  
+   Check the live benchmark panel showing attack interception rates and false-positive statistics computed directly from runtime state.
+
+---
+
+## Limitations
+
+- **Scripted Agent Scenarios:** For deterministic, reproducible demonstrations, the agent tasks and red-team attacks follow structured execution scripts. The PEP gateway itself is model-agnostic and processes standard JSON-RPC / MCP tool calls.
+- **Self-Authored Red-Team Suite:** The 15 adversarial variants in `redteam.py` were written by our team to evaluate specific policy boundaries; 0 bypasses on this suite demonstrates policy coverage against modelled vectors, not mathematical proof of security against all unknown attacks.
+- **Tamper-Evident, Not Tamper-Proof:** The SHA-256 hash chain detects any modification to historical blocks. However, an attacker with write access to the host storage could rewrite the file and recompute all hashes. External anchoring of the chain head is required for tamper-resistance.
+- **Synthetic Tool Execution:** All tool side effects (database queries, shell commands, email egress) are executed against in-memory synthetic state for safety.
+
+---
+
+## Safety and Responsible Engineering
+
+All operations in AgentShield are 100% simulated and self-contained:
+- **No Subprocess Invocations:** Verified `0` instances of `subprocess.Popen`, `os.system`, or `os.popen`.
+- **No Arbitrary Code Execution:** Verified `0` instances of `eval()` or `exec()`.
+- **No Real Network Egress:** Outbound email and database operations write to an in-memory `OUTBOX` and synthetic mock stores; no external network packets are emitted during attack scenarios.
+- **Zero Real Credentials:** Fixture tokens and connection strings are synthetic test values (`sk-secret-live-key-9999`, `company.test`).
+
+---
+
+## Originality and Attribution
+
+- **Hackathon Timeline:** Every commit in this repository was authored during the Parallax Hackathon window, starting from the initial commit (`f962a7c`) on **2026-10-30 at 18:55:25 IST** (the competition commenced Oct 30, 2026 at 16:00 IST).
+- **Core Open-Source Libraries:**
+  - **FastAPI & Starlette:** REST API, WebSocket transport, and dependency-injection authorization.
+  - **Pydantic v2:** Strong schema validation and JSON serialization.
+  - **Next.js 16 (Turbopack) & React 19:** Server components and single-page SOC dashboard.
+  - **Tailwind CSS & Lucide Icons:** Styling and icon set.
+- **Conceptual References:**
+  - NIST SP 800-207 (*Zero Trust Architecture* — Policy Enforcement Point concepts).
+  - Anthropic Model Context Protocol (MCP) (*JSON-RPC 2.0 tool invocation specifications*).
+  - Linear cryptographic hash-chaining principles.
+
+---
+
+## Local Setup Instructions
+
+### 1. Launch FastAPI PEP Gateway
 ```bash
-# Navigate to the backend directory
 cd backend
-
-# Create and activate virtual environment
 python3 -m venv venv
 source venv/bin/activate
-
-# Install dependencies
 pip install -r requirements.txt
 
-# Run all 64 automated security verification tests
+# Run all 64 automated tests
 pytest tests/
 
-# Start the Policy Enforcement Point daemon
+# Start PEP daemon
 uvicorn app.main:app --port 8000 --host 127.0.0.1
 ```
-*The PEP is now active on `http://127.0.0.1:8000` with Swagger docs at `http://127.0.0.1:8000/docs`.*
 
-### 2. Launch the Next.js SOC Dashboard
+### 2. Launch Next.js SOC Dashboard
 ```bash
-# In the root repository directory
 npm install
-
-# Start development server (or run 'npm run build && npm start' for production)
 npm run dev
 ```
-*Open **[http://localhost:3000](http://localhost:3000)** in your browser.*
+Open **[http://localhost:3000](http://localhost:3000)** in your browser.
 
 ---
 
-## 🧪 Automated Test Verification
+## Team
 
-AgentShield includes 64 comprehensive automated tests covering every layer of the zero-trust architecture:
-
-```bash
-$ pytest tests/ -v
-============================= test session starts ==============================
-platform darwin -- Python 3.14.7, pytest-9.2.0, pluggy-1.7.0
-rootdir: /Users/adithya/Hack4A/backend
-configfile: pytest.ini
-plugins: asyncio-1.4.1, anyio-4.15.1
-collected 64 items
-
-tests/test_approval_flow.py::test_enforce_approve_returns_allow PASSED    [  1%]
-tests/test_approval_flow.py::test_enforce_reject_returns_deny PASSED     [  3%]
-tests/test_approval_flow.py::test_enforce_timeout_denies PASSED          [  4%]
-tests/test_evasion_and_toolcall.py::test_evasion_base64_injection_detected PASSED [  6%]
-tests/test_evasion_and_toolcall.py::test_evasion_unicode_homoglyph_detected PASSED [  7%]
-tests/test_evasion_and_toolcall.py::test_durable_audit_ledger_persists_to_file PASSED [  9%]
-tests/test_gateway.py::test_evaluate_tier1_allows PASSED                 [ 10%]
-tests/test_gateway.py::test_intercept_audit_write_called PASSED          [ 12%]
-tests/test_gateway.py::test_intercept_audit_failure_fails_closed PASSED  [ 14%]
-tests/test_hardening_reviewer.py::test_api_auth_boundaries PASSED        [ 15%]
-tests/test_hardening_reviewer.py::test_approval_replay_rejected PASSED   [ 17%]
-tests/test_judge_audit.py::test_chain_integrity_verification PASSED      [ 20%]
-tests/test_judge_audit.py::test_tamper_detection_breaks_chain PASSED     [ 21%]
-tests/test_security_boundaries.py::test_auth_boundaries_401_and_403 PASSED [ 23%]
-tests/test_security_boundaries.py::test_session_creation_endpoint PASSED  [ 25%]
-tests/test_security_boundaries.py::test_mcp_identity_anti_spoofing PASSED [ 26%]
-tests/test_security_boundaries.py::test_pending_approvals_redacts_secrets PASSED [ 28%]
-tests/test_security_boundaries.py::test_audit_failure_fails_closed PASSED [ 29%]
-...
-======================== 64 passed, 1 warning in 0.53s =========================
-```
-
----
-
-## 👥 Hackathon Team & Project Ownership
-- **Project:** AgentShield (Track 01: Secure the Agent, Not Just the Prompt)
-- **Event:** Parallax Hackathon 2026 (BMSCE IEEE Computer Society)
-- **Repository:** [https://github.com/adithya5693a/Hack4A](https://github.com/adithya5693a/Hack4A)
-- **License:** MIT License
+- **[Adithya]** — *Systems Architecture, PEP Gateway, and Cryptographic Hash Chain*
+- **[Team Member 2]** — *Red-Team Adversarial Harness & Autonomous Agent Runtime*
+- **[Team Member 3]** — *SOC Frontend, Telemetry Stream, and Visualizers*
