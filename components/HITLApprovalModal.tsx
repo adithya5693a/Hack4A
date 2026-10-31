@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import {
   AlertTriangle,
   ShieldAlert,
@@ -22,6 +23,8 @@ interface HITLApprovalModalProps {
   onClose: () => void;
   onAction: (event: TelemetryEvent, decision: ApprovalDecision) => Promise<void>;
   queueCount?: number;
+  isAuthenticated: boolean;
+  onSignIn: () => void;
 }
 
 export default function HITLApprovalModal({
@@ -30,12 +33,21 @@ export default function HITLApprovalModal({
   onClose,
   onAction,
   queueCount = 0,
+  isAuthenticated,
+  onSignIn,
 }: HITLApprovalModalProps) {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   if (!isOpen || !event) return null;
 
   const handleDecision = async (decision: ApprovalDecision) => {
+    if (!isAuthenticated) {
+      toast.error("Authentication Required", {
+        description: "You must sign in with Google as SOC_ADMIN_01 to authorize or block critical actions.",
+        icon: <Lock className="h-4 w-4 text-crimson" />,
+      });
+      return;
+    }
     try {
       setIsSubmitting(true);
       await onAction(event, decision);
@@ -173,17 +185,40 @@ export default function HITLApprovalModal({
               <Clock className="h-3 w-3 text-neutral-500" />
               {new Date(event.timestamp).toLocaleTimeString()}
             </span>
-            <span>Reviewer: <strong className="text-neutral-200">Security Operator</strong></span>
+            <span>Reviewer: <strong className={isAuthenticated ? "text-emerald-400 font-bold" : "text-amber-400 font-bold"}>{isAuthenticated ? "SOC_ADMIN_01 (SecOps Lead)" : "Unauthorized (Session Required)"}</strong></span>
           </div>
         </div>
+
+        {/* Authentication Warning for Unauthorized Users */}
+        {!isAuthenticated && (
+          <div className="mx-4 mb-3 p-3 rounded-xl bg-neutral-900 border border-amber-600/40 text-amber-200 text-xs flex flex-wrap items-center justify-between gap-3 shadow-inner">
+            <div className="flex items-center gap-2">
+              <Lock className="h-4 w-4 text-amber-400 flex-shrink-0" />
+              <span>
+                Google admin sign-in (<strong>SOC_ADMIN_01</strong>) required to approve or block actions.
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={onSignIn}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#171717] border border-zinc-700 hover:border-zinc-500 text-white font-bold text-xs active:scale-[0.97] transition-all duration-150 cursor-pointer shadow-sm"
+            >
+              <svg className="h-3.5 w-3.5 fill-current text-white flex-shrink-0" viewBox="0 0 24 24">
+                <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z" />
+              </svg>
+              <span>Sign in with Google</span>
+            </button>
+          </div>
+        )}
 
         {/* Modal Actions (Dual CTAs with crisp active:scale-[0.97] feedback under 160ms) */}
         <div className="p-3 sm:p-4 bg-forest border-t border-neutral-800 flex items-center justify-end gap-2.5">
           {/* Button 1: [Allow Once] (styled with subtle #06110C Forest Green border/text) */}
           <button
             onClick={() => handleDecision("APPROVE")}
-            disabled={isSubmitting}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg font-mono text-xs font-bold uppercase tracking-wider bg-forest border border-emerald-900/80 text-emerald-300 hover:border-emerald-700 hover:bg-emerald-950/40 active:scale-[0.97] transition-all duration-100 ease-out shadow-[0_0_10px_rgba(6,17,12,0.8)] disabled:opacity-50 cursor-pointer"
+            title={!isAuthenticated ? "Admin Google authentication required" : "Approve this action one-time"}
+            disabled={isSubmitting || !isAuthenticated}
+            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg font-mono text-xs font-bold uppercase tracking-wider bg-forest border border-emerald-900/80 text-emerald-300 hover:border-emerald-700 hover:bg-emerald-950/40 active:scale-[0.97] transition-all duration-100 ease-out shadow-[0_0_10px_rgba(6,17,12,0.8)] disabled:opacity-35 disabled:cursor-not-allowed cursor-pointer"
           >
             <CheckCircle className="h-3.5 w-3.5 text-emerald-400" />
             <span>[Allow Once]</span>
@@ -192,8 +227,9 @@ export default function HITLApprovalModal({
           {/* Button 2: [Block & Protect] (styled with #A31C18 Crimson Red) */}
           <button
             onClick={() => handleDecision("REJECT")}
-            disabled={isSubmitting}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg font-mono text-xs font-bold uppercase tracking-wider bg-crimson text-white hover:bg-red-800 active:scale-[0.97] transition-all duration-100 ease-out border border-red-500/70 shadow-[0_0_20px_rgba(163,28,24,0.5)] disabled:opacity-50 cursor-pointer"
+            title={!isAuthenticated ? "Admin Google authentication required" : "Block and quarantine originating agent"}
+            disabled={isSubmitting || !isAuthenticated}
+            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg font-mono text-xs font-bold uppercase tracking-wider bg-crimson text-white hover:bg-red-800 active:scale-[0.97] transition-all duration-100 ease-out border border-red-500/70 shadow-[0_0_20px_rgba(163,28,24,0.5)] disabled:opacity-35 disabled:cursor-not-allowed cursor-pointer"
           >
             <Ban className="h-3.5 w-3.5" />
             <span>[Block & Protect]</span>

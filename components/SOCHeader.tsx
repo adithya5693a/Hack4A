@@ -2,12 +2,16 @@
 
 import { useState, useEffect } from "react";
 import { Shield, Wifi, WifiOff, Activity, RefreshCw } from "lucide-react";
+import GoogleAuthWidget from "./GoogleAuthWidget";
 
 interface SOCHeaderProps {
   connected: boolean;
   mockMode: boolean;
   onToggleMock: () => void;
   eventCount: number;
+  isAuthenticated: boolean;
+  onLogin: () => void;
+  onLogout: () => void;
 }
 
 export default function SOCHeader({
@@ -15,6 +19,9 @@ export default function SOCHeader({
   mockMode,
   onToggleMock,
   eventCount,
+  isAuthenticated,
+  onLogin,
+  onLogout,
 }: SOCHeaderProps) {
   const [time, setTime] = useState<string>("");
 
@@ -136,6 +143,13 @@ export default function SOCHeader({
           >
             {mockMode ? "Stop Feed" : "Start Feed"}
           </button>
+
+          {/* Google Authentication Widget */}
+          <GoogleAuthWidget
+            isAuthenticated={isAuthenticated}
+            onLogin={onLogin}
+            onLogout={onLogout}
+          />
         </div>
       </div>
     </header>

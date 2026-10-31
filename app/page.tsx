@@ -40,6 +40,7 @@ export default function SOCDashboardPage() {
   // HITL Modal State
   const [activeModalEvent, setActiveModalEvent] = useState<TelemetryEvent | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
   // Keep track of events already auto-prompted so we don't bombard the user repeatedly
   const autoPromptedIdsRef = useRef<Set<string>>(new Set());
@@ -165,6 +166,9 @@ export default function SOCDashboardPage() {
         mockMode={mockMode}
         onToggleMock={toggleMock}
         eventCount={events.length}
+        isAuthenticated={isAuthenticated}
+        onLogin={() => setIsAuthenticated(true)}
+        onLogout={() => setIsAuthenticated(false)}
       />
 
       {/* Main SOC Dashboard Viewport */}
@@ -395,6 +399,8 @@ export default function SOCDashboardPage() {
         onClose={() => setIsModalOpen(false)}
         onAction={handleApprovalAction}
         queueCount={pendingQueue.length}
+        isAuthenticated={isAuthenticated}
+        onSignIn={() => setIsAuthenticated(true)}
       />
 
       {/* SOC Bottom Status Bar */}
