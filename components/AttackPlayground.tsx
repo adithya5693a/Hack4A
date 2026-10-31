@@ -156,7 +156,11 @@ export default function AttackPlayground({ onAttackDispatched }: AttackPlaygroun
       const res = await fetch(`${BACKEND_URL}/api/agent/run`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: customPrompt.trim(), scenario_id: "custom_user_prompt" }),
+        body: JSON.stringify({
+          prompt: customPrompt.trim(),
+          scenario_id: "custom_user_prompt",
+          shield_enabled: shieldEnabled,
+        }),
       });
 
       if (!res.ok) {
@@ -168,15 +172,17 @@ export default function AttackPlayground({ onAttackDispatched }: AttackPlaygroun
       const steps = Array.isArray(data.steps) ? data.steps : [];
       const lastStep = steps[steps.length - 1] || {};
       const actualRuleId = lastStep.rule_id || (data.success ? "R-SAFE-01" : "R-POLICY-VIOLATION");
+      const isCompromised = !shieldEnabled && steps.some((s: any) => s.status === "COMPROMISED" || s.decision === "SHIELD_BYPASS");
+      const isNeutralized = shieldEnabled && steps.some((s: any) => s.status === "DENIED" || s.decision === "DENY");
 
       const execResult: ExecutionResult = {
         scenarioId: "custom_prompt",
         scenarioName: `Custom Prompt: "${customPrompt.slice(0, 32)}..."`,
-        expectedRule: actualRuleId,
+        expectedRule: isCompromised ? "SHIELD_OFF_BYPASS" : actualRuleId,
         unprotectedBlastRadius: "Evaluated dynamically through AgentShield Policy Enforcement Point.",
         shield_enabled: shieldEnabled,
-        neutralized: !data.success,
-        compromised: false,
+        neutralized: isNeutralized,
+        compromised: isCompromised,
         steps: steps,
       };
       setLastExecution(execResult);
@@ -206,9 +212,22 @@ export default function AttackPlayground({ onAttackDispatched }: AttackPlaygroun
       onAttackDispatched(mappedEvents);
       dispatchChainRefresh();
 
-      toast.success("Custom Prompt Evaluated", {
-        description: `Agent executed ${steps.length} step(s) through Policy Enforcement Point.`,
-      });
+      if (isCompromised) {
+        toast.warning("Baseline Compromise (Shield OFF)", {
+          description: "Action executed with NO guardrails: Harm succeeded visibly.",
+          icon: <ShieldOff className="h-4 w-4 text-amber-400" />,
+        });
+      } else if (isNeutralized) {
+        toast.error(`Attack Intercepted [${actualRuleId}]`, {
+          description: "Policy Enforcement Point blocked the custom prompt attack.",
+          icon: <ShieldAlert className="h-4 w-4 text-crimson" />,
+        });
+      } else {
+        toast.success("Custom Prompt Evaluated", {
+          description: `Agent executed ${steps.length} step(s) safely through Policy Enforcement Point.`,
+          icon: <ShieldCheck className="h-4 w-4 text-emerald-400" />,
+        });
+      }
     } catch (err: any) {
       console.error("[Playground] Error running custom prompt:", err);
       toast.error("Execution Failed", {

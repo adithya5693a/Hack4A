@@ -80,6 +80,7 @@ class ScanOutputRequest(BaseModel):
 class AgentRunRequest(BaseModel):
     prompt: str
     scenario_id: Optional[str] = None
+    shield_enabled: bool = True
 
 
 class SecurityException(Exception):

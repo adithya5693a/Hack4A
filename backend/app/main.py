@@ -290,7 +290,7 @@ def reset_system_state(admin: dict[str, str] = Depends(require_admin)):
 
 @app.post("/api/agent/run")
 async def trigger_agent(req: AgentRunRequest):
-    result = await agent.run_scenario(req.prompt, req.scenario_id or "custom", shield_enabled=True)
+    result = await agent.run_scenario(req.prompt, req.scenario_id or "custom", shield_enabled=req.shield_enabled)
     if merkle_ledger.chain:
         latest = merkle_ledger.chain[-1]
         await ws_manager.broadcast({
@@ -302,10 +302,10 @@ async def trigger_agent(req: AgentRunRequest):
             "event": "ATTACK_INTERCEPTED",
             "data": {
                 "scenario_name": f"Custom Prompt: {req.prompt[:32]}",
-                "shield_enabled": True,
+                "shield_enabled": req.shield_enabled,
                 "steps": result.steps,
                 "neutralized": any(s.get("decision") == "DENY" for s in result.steps),
-                "compromised": False
+                "compromised": not req.shield_enabled and any(s.get("status") == "COMPROMISED" for s in result.steps)
             }
         })
     return {

