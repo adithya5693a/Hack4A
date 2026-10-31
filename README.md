@@ -14,7 +14,7 @@
 
 | Resource | URL | Description |
 | :--- | :--- | :--- |
-| **Vercel Web App** | [https://agentshield-sooty.vercel.app](https://agentshield-sooty.vercel.app) | Public Next.js dashboard deployment. *(Connects to PEP via local tunnel or `NEXT_PUBLIC_BACKEND_URL`)* |
+| **Vercel Web App** | [https://hack4a.vercel.app](https://hack4a.vercel.app) | Public Next.js dashboard deployment. *(For live evaluation with local PEP, open `localhost:3000`)* |
 | **GitHub Repository** | [https://github.com/adithya5693a/Hack4A](https://github.com/adithya5693a/Hack4A) | Source code, automated tests, and implementation history. |
 | **Local Evaluation** | **UI:** [http://localhost:3000](http://localhost:3000)<br>**PEP:** [http://127.0.0.1:8000](http://127.0.0.1:8000) | Local runtime for judging evaluation with live WebSocket telemetry. |
 | **OpenAPI / Swagger** | [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) | Interactive FastAPI documentation for JSON-RPC and REST endpoints. |
