@@ -24,6 +24,7 @@ import {
 import type { TelemetryEvent } from "@/types/telemetry";
 import { adaptBackendToTelemetry } from "@/lib/telemetry-adapter";
 import { BACKEND_URL } from "@/lib/api-config";
+import { dispatchChainRefresh } from "@/hooks/useAuditChain";
 import { toast } from "sonner";
 
 interface AttackPlaygroundProps {
@@ -203,6 +204,7 @@ export default function AttackPlayground({ onAttackDispatched }: AttackPlaygroun
         });
       }
       onAttackDispatched(mappedEvents);
+      dispatchChainRefresh();
 
       toast.success("Custom Prompt Evaluated", {
         description: `Agent executed ${steps.length} step(s) through Policy Enforcement Point.`,
@@ -271,6 +273,7 @@ export default function AttackPlayground({ onAttackDispatched }: AttackPlaygroun
       if (mappedEvents.length > 0) {
         onAttackDispatched(mappedEvents);
       }
+      dispatchChainRefresh();
 
       if (scenario.isApproval) {
         toast.warning("Quarantine Triggered", {
@@ -430,8 +433,11 @@ export default function AttackPlayground({ onAttackDispatched }: AttackPlaygroun
                   {scenario.subtext}
                 </p>
 
-                <div className="mt-2 text-[10px] text-neutral-500 font-mono">
-                  Target: <span className="text-neutral-400">{scenario.targetTool}</span>
+                <div className="mt-2 text-[10px] text-neutral-500 font-mono flex items-center justify-between">
+                  <span>Trajectory: <span className="text-neutral-300 font-semibold">{scenario.targetTool}</span></span>
+                  {scenario.targetTool.includes("->") && (
+                    <span className="text-[9px] px-1 py-0.2 rounded bg-neutral-900 border border-neutral-700 text-amber-300">2-Hop Sequence</span>
+                  )}
                 </div>
               </div>
 

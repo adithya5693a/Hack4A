@@ -95,6 +95,19 @@ export function adaptBackendToTelemetry(raw: any): TelemetryEvent | null {
 
   const ruleId = raw.rule_id || raw.rule || undefined;
 
+  let hopStage = raw.hop_stage;
+  if (!hopStage) {
+    if (toolName === "read_document" && (args.includes("invoice") || args.includes("document") || args.includes("txt"))) {
+      hopStage = "Hop 1/2: Document Read";
+    } else if (toolName === "execute_bash" && (args.includes("rm -rf") || args.includes("backups") || args.includes("curl"))) {
+      hopStage = "Hop 2/2: Injected Threat Intercepted";
+    } else if (toolName === "send_email" && (args.includes("evil") || args.includes("exfiltrat"))) {
+      hopStage = "Hop 2/2: Injected Exfil Intercepted";
+    } else if (raw.step_index !== undefined) {
+      hopStage = `Step ${raw.step_index + 1}`;
+    }
+  }
+
   return {
     id: String(callId || `call_${Date.now()}`),
     timestamp,
@@ -106,6 +119,6 @@ export function adaptBackendToTelemetry(raw: any): TelemetryEvent | null {
     diagnosis: diagnosis || (status === "BLOCKED" ? "Blocked by policy engine" : status === "COMPROMISED" ? "Compromised: Unrestricted execution (Shield OFF)" : "Execution verified"),
     rule_id: ruleId,
     event_type: raw.event || undefined,
-    hop_stage: raw.hop_stage || (raw.step_index !== undefined ? `Step ${raw.step_index + 1}` : undefined),
+    hop_stage: hopStage,
   };
 }

@@ -21,6 +21,7 @@ export default function CryptographicAuditVisualizer() {
     verificationResult,
     toggleTampering,
     verifyIntegrity,
+    refreshChain,
     resetLedger,
   } = useAuditChain();
 
@@ -164,6 +165,18 @@ export default function CryptographicAuditVisualizer() {
             </div>
           </label>
 
+          {/* Refresh button */}
+          <button
+            onClick={() => {
+              refreshChain(null);
+              toast.info("Ledger Synced", { description: `Loaded ${blocks.length} audit block(s).` });
+            }}
+            title="Refresh ledger blocks"
+            className="p-1.5 rounded-lg bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-neutral-200 hover:border-neutral-700 cursor-pointer transition-colors active:scale-[0.97]"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+          </button>
+
           {/* Reset button */}
           <button
             onClick={handleResetLedger}
@@ -172,6 +185,20 @@ export default function CryptographicAuditVisualizer() {
           >
             <RotateCcw className="h-3.5 w-3.5" />
           </button>
+        </div>
+      </div>
+
+      {/* Educational Purpose Callout */}
+      <div className="mb-3.5 p-2.5 rounded-lg bg-neutral-950/70 border border-neutral-800/80 text-[11px] text-neutral-300 flex items-start gap-2.5">
+        <Layers className="h-4 w-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+        <div className="space-y-0.5">
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-neutral-100">Purpose of Tamper-Proof Activity Log (Criterion 03):</span>
+            <span className="text-[10px] text-neutral-500">Live Chain Height: {blocks.length} Blocks</span>
+          </div>
+          <p className="text-neutral-400 text-[10px] leading-relaxed">
+            Every tool invocation intercepted by AgentShield (ALLOWED or BLOCKED) is immediately sealed into an immutable SHA-256 block cryptographically linked to the previous block. If an adversary attempts to modify historical audit records, the hash pointers break instantly, detecting the breach in real time.
+          </p>
         </div>
       </div>
 

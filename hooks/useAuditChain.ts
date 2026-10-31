@@ -4,6 +4,12 @@ import { useState, useCallback, useEffect } from "react";
 import type { AuditBlock, BackendAuditBlock, AuditVerificationResponse } from "@/types/audit";
 import { BACKEND_URL } from "@/lib/api-config";
 
+export function dispatchChainRefresh() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("agentshield:refresh_chain"));
+  }
+}
+
 export function useAuditChain() {
   const [blocks, setBlocks] = useState<AuditBlock[]>([]);
   const [isTampered, setIsTampered] = useState<boolean>(false);
@@ -187,9 +193,25 @@ export function useAuditChain() {
     }
   }, [fetchChain, verifyIntegrity]);
 
-  // Initial load
+  // Initial load and live poller
   useEffect(() => {
     fetchChain(null);
+
+    // Auto-poll ledger every 3 seconds so blocks update in real time when attacks run
+    const interval = setInterval(() => {
+      fetchChain(null);
+    }, 3000);
+
+    const handleCustomRefresh = () => {
+      fetchChain(null);
+    };
+
+    window.addEventListener("agentshield:refresh_chain", handleCustomRefresh);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("agentshield:refresh_chain", handleCustomRefresh);
+    };
   }, [fetchChain]);
 
   return {

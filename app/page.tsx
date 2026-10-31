@@ -14,6 +14,7 @@ import { useSecurityStream } from "@/hooks/useSecurityStream";
 import type { TelemetryEvent, ApprovalDecision } from "@/types/telemetry";
 import { adaptBackendToTelemetry } from "@/lib/telemetry-adapter";
 import { BACKEND_URL } from "@/lib/api-config";
+import { dispatchChainRefresh } from "@/hooks/useAuditChain";
 import { toast } from "sonner";
 import {
   ShieldCheck,
@@ -125,6 +126,7 @@ export default function SOCDashboardPage() {
 
       updateEventStatus(event.id, newStatus, outcomeDiag);
       setIsModalOpen(false);
+      dispatchChainRefresh();
 
       if (isApprove) {
         toast.success("Execution Allowed Once", {
@@ -164,6 +166,7 @@ export default function SOCDashboardPage() {
         const mapped = data.steps.map((s: any) => adaptBackendToTelemetry({ ...s, timestamp: new Date().toISOString() })).filter(Boolean) as TelemetryEvent[];
         addEvents(mapped);
       }
+      dispatchChainRefresh();
       toast.success("Safe Activity Verified", {
         description: "Legitimate agent task executed and audited under inspection policy.",
         icon: <CheckCircle className="h-4 w-4 text-emerald-400" />,
@@ -190,6 +193,7 @@ export default function SOCDashboardPage() {
         const mapped = data.steps.map((s: any) => adaptBackendToTelemetry({ ...s, timestamp: new Date().toISOString() })).filter(Boolean) as TelemetryEvent[];
         addEvents(mapped);
       }
+      dispatchChainRefresh();
       toast.warning("Dangerous Threat Detected", {
         description: "Poisoned invoice attack intercepted by Taint Guard (R-TAINT-01).",
         icon: <AlertTriangle className="h-4 w-4 text-crimson" />,
@@ -205,6 +209,7 @@ export default function SOCDashboardPage() {
   // Attack Simulator Dispatcher: ingest mapped steps into stream
   const handlePlaygroundAttack = (dispatchedEvents: TelemetryEvent[]) => {
     addEvents(dispatchedEvents);
+    dispatchChainRefresh();
   };
 
   // 1-Click Judge Audit Tour: Runs the reviewer-specified 5-stage live verification

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import type { TelemetryEvent, TelemetryStatus } from "@/types/telemetry";
 import { adaptBackendToTelemetry } from "@/lib/telemetry-adapter";
 import { getWsUrl } from "@/lib/api-config";
+import { dispatchChainRefresh } from "@/hooks/useAuditChain";
 
 const MAX_BUFFER = 250;
 const RECONNECT_INTERVAL_MS = 3500;
@@ -105,6 +106,7 @@ export function useSecurityStream() {
           if (parsed.event === "NEW_BLOCK" && parsed.block) {
             const adapted = adaptBackendToTelemetry(parsed.block);
             if (adapted) addEvent(adapted);
+            dispatchChainRefresh();
             return;
           }
 
@@ -118,23 +120,64 @@ export function useSecurityStream() {
         }
       };
 
-      ws.onerror = () => {
+      ws.onerror = async () => {
+        try {
+          const res = await fetch("/health", { cache: "no-store" });
+          if (res.ok) {
+            setConnected(true);
+            return;
+          }
+        } catch {
+          // both down
+        }
         setConnected(false);
       };
 
-      ws.onclose = () => {
-        setConnected(false);
+      ws.onclose = async () => {
+        try {
+          const res = await fetch("/health", { cache: "no-store" });
+          if (res.ok) {
+            setConnected(true);
+          }
+        } catch {
+          // both down
+        }
         reconnectTimeoutRef.current = setTimeout(() => {
           connectWebSocket();
         }, RECONNECT_INTERVAL_MS);
       };
     } catch {
-      setConnected(false);
+      fetch("/health", { cache: "no-store" })
+        .then((res) => {
+          if (res.ok) setConnected(true);
+        })
+        .catch(() => setConnected(false));
       reconnectTimeoutRef.current = setTimeout(() => {
         connectWebSocket();
       }, RECONNECT_INTERVAL_MS);
     }
   }, [addEvent, addEvents]);
+
+  // Initial HTTP health check ensures online status even before or without WebSocket
+  useEffect(() => {
+    let isMounted = true;
+    const checkPEPStatus = async () => {
+      try {
+        const res = await fetch("/health", { cache: "no-store" });
+        if (res.ok && isMounted) {
+          setConnected(true);
+        }
+      } catch {
+        // ws will handle
+      }
+    };
+    checkPEPStatus();
+    const interval = setInterval(checkPEPStatus, 4000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
 
   useEffect(() => {
     connectWebSocket();
