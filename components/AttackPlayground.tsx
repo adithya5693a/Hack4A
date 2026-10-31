@@ -233,7 +233,7 @@ export default function AttackPlayground({ onAttackDispatched }: AttackPlaygroun
                   </>
                 ) : (
                   <>
-                    <span>Run Test →</span>
+                    <span>Run Test</span>
                     <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
                   </>
                 )}

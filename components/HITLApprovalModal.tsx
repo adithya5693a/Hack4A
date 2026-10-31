@@ -50,7 +50,7 @@ export default function HITLApprovalModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
       {/* Backdrop with smooth fade */}
       <div
-        className="fixed inset-0 bg-black/85 backdrop-blur-sm transition-opacity duration-150"
+        className="fixed inset-0 bg-black/35 backdrop-blur-[1.5px] transition-opacity duration-150"
         onClick={onClose}
       />
 
@@ -58,7 +58,7 @@ export default function HITLApprovalModal({
       <div
         role="dialog"
         aria-modal="true"
-        className="relative w-full max-w-lg bg-charcoal rounded-xl border border-crimson/80 shadow-[0_0_35px_rgba(163,28,24,0.35)] overflow-hidden font-mono z-10 animate-[modalIn_180ms_cubic-bezier(0.23,1,0.32,1)_forwards]"
+        className="relative w-full max-w-lg bg-charcoal rounded-xl border border-crimson/80 shadow-[0_20px_50px_rgba(0,0,0,0.85),0_0_35px_rgba(163,28,24,0.35)] overflow-hidden font-mono z-10 animate-[modalIn_180ms_cubic-bezier(0.23,1,0.32,1)_forwards]"
       >
         {/* Compact Emergency Banner in Crimson Red */}
         <div className="bg-crimson px-3.5 py-1.5 flex items-center justify-between text-white text-[11px] font-bold tracking-wider uppercase select-none">
