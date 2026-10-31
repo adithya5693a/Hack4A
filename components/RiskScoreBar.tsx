@@ -3,10 +3,21 @@
 import { getRiskLevel } from "@/types/telemetry";
 
 interface RiskScoreBarProps {
-  score: number;
+  score?: number | null;
 }
 
 export default function RiskScoreBar({ score }: RiskScoreBarProps) {
+  if (score === null || score === undefined) {
+    return (
+      <div className="flex items-center gap-2.5 min-w-[120px]">
+        <div className="flex-1 h-1.5 w-16 bg-neutral-900 rounded-full overflow-hidden border border-neutral-800">
+          <div className="h-full rounded-full bg-neutral-700" style={{ width: "0%" }} />
+        </div>
+        <span className="font-mono text-xs tabular-nums text-neutral-500">—</span>
+      </div>
+    );
+  }
+
   const level = getRiskLevel(score);
 
   const config = {

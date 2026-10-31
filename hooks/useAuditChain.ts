@@ -9,10 +9,10 @@ export function useAuditChain() {
   const [isTampered, setIsTampered] = useState<boolean>(false);
   const [isVerifying, setIsVerifying] = useState<boolean>(false);
   const [verificationResult, setVerificationResult] = useState<AuditVerificationResponse>({
-    valid: true,
-    total_blocks: 1,
+    valid: false,
+    total_blocks: 0,
     tampered_block: null,
-    message: "Integrity Verified: Chain Valid",
+    message: "Unverified (Click 'Verify Log Integrity')",
     verified_at: "",
   });
 
@@ -134,6 +134,9 @@ export function useAuditChain() {
       try {
         const res = await fetch(`${BACKEND_URL}/api/audit/tamper?block_index=1`, {
           method: "POST",
+          headers: {
+            "Authorization": "Bearer admin-secret-session-90214",
+          },
         });
         if (res.ok) {
           setIsTampered(true);
@@ -165,6 +168,9 @@ export function useAuditChain() {
     try {
       const res = await fetch(`${BACKEND_URL}/api/reset`, {
         method: "POST",
+        headers: {
+          "Authorization": "Bearer admin-secret-session-90214",
+        },
       });
       if (res.ok) {
         setIsTampered(false);

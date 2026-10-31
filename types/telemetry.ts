@@ -1,7 +1,7 @@
 // ─── AgentShield — Telemetry Types ───────────────────────────────────────────
 // Isolated in /types/telemetry.ts as required by constraints
 
-export type TelemetryStatus = "ALLOWED" | "BLOCKED" | "PENDING";
+export type TelemetryStatus = "ALLOWED" | "BLOCKED" | "PENDING" | "COMPROMISED";
 
 export interface TelemetryEvent {
   /** Unique event identifier e.g. "evt_1048" or backend "call_id" */
@@ -14,9 +14,9 @@ export interface TelemetryEvent {
   tool_name: string;
   /** Raw JSON arguments string e.g. "{\"command\": \"rm -rf /backups\"}" */
   args: string;
-  /** Risk score calculated from 0 to 100 */
-  risk_score: number;
-  /** Policy decision status: ALLOWED, BLOCKED, or PENDING */
+  /** Risk score calculated from 0 to 100 (null if unassessed) */
+  risk_score?: number | null;
+  /** Policy decision status: ALLOWED, BLOCKED, PENDING, or COMPROMISED */
   status: TelemetryStatus;
   /** Optional natural-language diagnosis explaining the security reasoning */
   diagnosis?: string;

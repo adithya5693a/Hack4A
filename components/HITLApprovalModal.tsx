@@ -56,7 +56,7 @@ export default function HITLApprovalModal({
     }
   };
 
-  const isCritical = event.risk_score >= 80;
+  const isCritical = (event.risk_score ?? 0) >= 80;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
@@ -189,13 +189,13 @@ export default function HITLApprovalModal({
           </div>
         </div>
 
-        {/* Authentication Warning for Unauthorized Users with 1-Click Judge Demo Bypass */}
+        {/* Authentication Warning for Unauthorized Users with 1-Click SOC Admin Session */}
         {!isAuthenticated && (
           <div className="mx-4 mb-3 p-3 rounded-xl bg-neutral-900 border border-amber-600/40 text-amber-200 text-xs flex flex-wrap items-center justify-between gap-3 shadow-inner">
             <div className="flex items-center gap-2">
               <Lock className="h-4 w-4 text-amber-400 flex-shrink-0" />
               <span>
-                SOC Lead session (<strong>SOC_ADMIN_01</strong>) required to resolve approvals.
+                Demo SOC session (<strong>SOC_ADMIN_01</strong>) required to resolve approvals.
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -204,7 +204,7 @@ export default function HITLApprovalModal({
                 onClick={onSignIn}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-forest border border-emerald-800 hover:border-emerald-600 text-emerald-300 font-bold text-xs active:scale-[0.97] transition-all cursor-pointer shadow-[0_0_10px_rgba(6,17,12,0.8)]"
               >
-                <span>⚡ Instant Sign-In (Demo Lead)</span>
+                <span>⚡ Establish SOC Session</span>
               </button>
             </div>
           </div>
@@ -215,7 +215,7 @@ export default function HITLApprovalModal({
           {/* Button 1: [Allow Once] (styled with subtle #06110C Forest Green border/text) */}
           <button
             onClick={() => handleDecision("APPROVE")}
-            title={!isAuthenticated ? "Admin Google authentication required" : "Approve this action one-time"}
+            title={!isAuthenticated ? "Demo SOC session required" : "Approve this action one-time"}
             disabled={isSubmitting || !isAuthenticated}
             className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg font-mono text-xs font-bold uppercase tracking-wider bg-forest border border-emerald-900/80 text-emerald-300 hover:border-emerald-700 hover:bg-emerald-950/40 active:scale-[0.97] transition-all duration-100 ease-out shadow-[0_0_10px_rgba(6,17,12,0.8)] disabled:opacity-35 disabled:cursor-not-allowed cursor-pointer"
           >
@@ -226,7 +226,7 @@ export default function HITLApprovalModal({
           {/* Button 2: [Block & Protect] (styled with #A31C18 Crimson Red) */}
           <button
             onClick={() => handleDecision("REJECT")}
-            title={!isAuthenticated ? "Admin Google authentication required" : "Block and quarantine originating agent"}
+            title={!isAuthenticated ? "Demo SOC session required" : "Block and quarantine originating agent"}
             disabled={isSubmitting || !isAuthenticated}
             className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg font-mono text-xs font-bold uppercase tracking-wider bg-crimson text-white hover:bg-red-800 active:scale-[0.97] transition-all duration-100 ease-out border border-red-500/70 shadow-[0_0_20px_rgba(163,28,24,0.5)] disabled:opacity-35 disabled:cursor-not-allowed cursor-pointer"
           >

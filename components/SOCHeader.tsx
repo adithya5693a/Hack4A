@@ -7,8 +7,6 @@ import { BACKEND_URL } from "@/lib/api-config";
 
 interface SOCHeaderProps {
   connected: boolean;
-  mockMode: boolean;
-  onToggleMock: () => void;
   eventCount: number;
   isAuthenticated: boolean;
   onLogin: () => void;
@@ -20,8 +18,6 @@ interface SOCHeaderProps {
 
 export default function SOCHeader({
   connected,
-  mockMode,
-  onToggleMock,
   eventCount,
   isAuthenticated,
   onLogin,
@@ -84,9 +80,17 @@ export default function SOCHeader({
               <h1 className="text-lg font-bold tracking-wider font-mono text-neutral-100 uppercase">
                 Agent<span className="text-crimson">Shield</span>
               </h1>
-              <span className="rounded bg-forest px-1.5 py-0.5 text-[10px] font-mono font-semibold tracking-wider text-emerald-400 border border-emerald-900/60">
-                ACTIVE
-              </span>
+              {connected && latency !== null ? (
+                <span className="rounded bg-forest px-1.5 py-0.5 text-[10px] font-mono font-semibold tracking-wider text-emerald-400 border border-emerald-900/60 flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-glow-pulse" />
+                  PEP ONLINE
+                </span>
+              ) : (
+                <span className="rounded bg-neutral-900 px-1.5 py-0.5 text-[10px] font-mono font-semibold tracking-wider text-neutral-400 border border-neutral-800 flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
+                  PEP OFFLINE
+                </span>
+              )}
             </div>
             <p className="text-[11px] font-mono text-neutral-400">
               Real-time security firewall protecting AI agents from malicious instructions.
@@ -152,13 +156,11 @@ export default function SOCHeader({
             </button>
           )}
 
-          {/* Feature 8: Live Backend Connection & Ping Latency Indicator */}
+          {/* Live Backend Connection & Ping Latency Indicator */}
           <div
             className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono font-medium border ${
               connected && latency !== null
                 ? "bg-forest border-emerald-900/80 text-emerald-400 shadow-[0_0_10px_rgba(6,17,12,0.8)]"
-                : mockMode
-                ? "bg-neutral-900 border-amber-600/60 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.2)]"
                 : "bg-neutral-900 border-crimson/50 text-red-300"
             }`}
           >
@@ -166,11 +168,6 @@ export default function SOCHeader({
               <>
                 <Wifi className="h-3.5 w-3.5 text-emerald-400" />
                 <span>PEP ONLINE ({latency}ms)</span>
-              </>
-            ) : mockMode ? (
-              <>
-                <RefreshCw className="h-3.5 w-3.5 text-amber-400 animate-spin" />
-                <span>SIMULATION FEED</span>
               </>
             ) : (
               <>

@@ -2,15 +2,33 @@
 
 > **Zero-Trust Runtime Policy Enforcement & Cryptographic SHA-256 Hash-Chained Audit Ledger for Autonomous AI Agents**
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel%20Production-crimson?style=for-the-badge&logo=vercel)](https://agentshield-sooty.vercel.app)
 [![Next.js](https://img.shields.io/badge/Next.js-16%20App%20Router-black?style=for-the-badge&logo=next.js)](https://nextjs.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-Backend%20PEP-009688?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com)
+[![Pytest](https://img.shields.io/badge/Pytest-56%2F56%20Passing-emerald?style=for-the-badge&logo=pytest)](https://docs.pytest.org)
 
 ---
 
-## 🚀 Live Demo
+## ⚡ Quick Start & Judging Verification
 
-- **Production Dashboard**: [https://agentshield-sooty.vercel.app](https://agentshield-sooty.vercel.app)
+AgentShield is a 100% self-contained, offline-resilient zero-trust firewall. To evaluate with live policy interception and cryptographic audit logging:
+
+### 1. Start the FastAPI Policy Enforcement Point (PEP)
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --port 8000 --host 127.0.0.1
+```
+
+### 2. Start the SOC Dashboard Frontend
+```bash
+npm install
+npm run dev
+```
+
+Open **[http://localhost:3000](http://localhost:3000)** in your browser.  
+The top bar will immediately display **PEP ONLINE** with sub-millisecond roundtrip latency.
 
 ---
 

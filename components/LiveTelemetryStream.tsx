@@ -20,17 +20,15 @@ import RiskScoreBar from "./RiskScoreBar";
 interface LiveTelemetryStreamProps {
   events: TelemetryEvent[];
   onClear: () => void;
-  mockMode: boolean;
-  onToggleMock: () => void;
   onSelectForReview?: (event: TelemetryEvent) => void;
+  isOnline?: boolean;
 }
 
 export default function LiveTelemetryStream({
   events,
   onClear,
-  mockMode,
-  onToggleMock,
   onSelectForReview,
+  isOnline = true,
 }: LiveTelemetryStreamProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<TelemetryStatus | "ALL">("ALL");
@@ -73,14 +71,6 @@ export default function LiveTelemetryStream({
 
   return (
     <div className="flex flex-col h-full bg-charcoal rounded-xl border border-forest shadow-[0_0_25px_rgba(6,17,12,0.9)] overflow-hidden font-mono">
-      {/* Labeled Synthetic Feed Warning when mock mode is manually toggled on */}
-      {mockMode && (
-        <div className="bg-crimson px-4 py-1.5 text-center text-xs font-bold uppercase tracking-widest text-white shadow-[0_0_15px_rgba(163,28,24,0.5)] flex items-center justify-center gap-2">
-          <AlertTriangle className="h-4 w-4 text-white" />
-          <span>SYNTHETIC FEED — not the PEP</span>
-        </div>
-      )}
-
       {/* Stream Header & Controls */}
       <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-neutral-800/80 bg-neutral-900/60">
         <div className="flex items-center gap-2.5">
@@ -117,7 +107,7 @@ export default function LiveTelemetryStream({
 
           {/* Filter Pills */}
           <div className="flex items-center rounded-lg bg-neutral-950/70 p-0.5 border border-neutral-800">
-            {(["ALL", "ALLOWED", "BLOCKED", "PENDING"] as const).map((status) => (
+            {(["ALL", "ALLOWED", "BLOCKED", "PENDING", "COMPROMISED"] as const).map((status) => (
               <button
                 key={status}
                 onClick={() => setStatusFilter(status)}
@@ -160,20 +150,16 @@ export default function LiveTelemetryStream({
         className="flex-1 overflow-y-auto divide-y divide-neutral-900/90 relative"
       >
         {filteredEvents.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-64 text-center p-6 text-neutral-500">
-            <Activity className="h-10 w-10 text-neutral-700 mb-3 animate-pulse" />
-            <p className="text-sm text-neutral-300">No events currently recorded</p>
-            <p className="text-xs text-neutral-500 mt-1 max-w-sm">
-              Click any scenario in the Live Attack Simulator above or inject test events.
+          <div className="flex flex-col items-center justify-center h-64 text-center p-6 text-neutral-500 font-mono">
+            <Activity className="h-10 w-10 text-neutral-700 mb-3" />
+            <p className="text-sm font-bold text-neutral-200">
+              {isOnline ? "Waiting for Real PEP Tool Requests" : "PEP Offline (No Backend Connection)"}
             </p>
-            {!mockMode && (
-              <button
-                onClick={onToggleMock}
-                className="mt-4 px-3 py-1.5 text-xs font-semibold rounded-lg bg-crimson text-white hover:bg-red-800 active:scale-[0.97] transition-all duration-100 ease-out shadow-[0_0_12px_rgba(163,28,24,0.3)] cursor-pointer"
-              >
-                Start Simulation Stream
-              </button>
-            )}
+            <p className="text-xs text-neutral-400 mt-1.5 max-w-sm">
+              {isOnline
+                ? "Click any red-team scenario in the Attack Simulator above to stream live interception verdicts."
+                : "Ensure FastAPI PEP is running on http://127.0.0.1:8000 (uvicorn app.main:app). Real events stream automatically."}
+            </p>
           </div>
         ) : (
           filteredEvents.map((event) => {

@@ -17,13 +17,21 @@ export function adaptBackendToTelemetry(raw: any): TelemetryEvent | null {
 
   // Map status according to judge rubric:
   // ALLOW -> ALLOWED
-  // DENY -> BLOCKED
+  // DENY / BLOCKED -> BLOCKED
   // PENDING_APPROVAL -> PENDING
+  // SHIELD_BYPASS / COMPROMISED -> COMPROMISED
   let status: TelemetryStatus = "ALLOWED";
   const rawStatus = (raw.status || raw.decision || "").toString().toUpperCase();
   const event = raw.event ? raw.event.toString().toLowerCase() : "";
 
   if (
+    rawStatus === "COMPROMISED" ||
+    rawStatus === "SHIELD_BYPASS" ||
+    event === "shield_bypass" ||
+    raw.shield_enabled === false && rawStatus === "SUCCESS" && raw.tainted
+  ) {
+    status = "COMPROMISED";
+  } else if (
     event === "approval_required" ||
     rawStatus === "PENDING_APPROVAL" ||
     rawStatus === "REQUIRE_APPROVAL" ||
@@ -35,9 +43,7 @@ export function adaptBackendToTelemetry(raw: any): TelemetryEvent | null {
     event === "injection_detected" ||
     rawStatus === "DENY" ||
     rawStatus === "BLOCKED" ||
-    rawStatus === "COMPROMISED" ||
-    rawStatus === "DENIED" ||
-    rawStatus === "SHIELD_BYPASS"
+    rawStatus === "DENIED"
   ) {
     status = "BLOCKED";
   } else if (
@@ -81,11 +87,10 @@ export function adaptBackendToTelemetry(raw: any): TelemetryEvent | null {
     }
   }
 
-  let riskScore = 15;
+  // Strictly use real risk_score if present; otherwise null (do not invent 94)
+  let riskScore: number | null = null;
   if (typeof raw.risk_score === "number") {
     riskScore = Math.round(raw.risk_score);
-  } else if (status === "BLOCKED" || status === "PENDING") {
-    riskScore = 94;
   }
 
   const ruleId = raw.rule_id || raw.rule || undefined;
@@ -98,7 +103,7 @@ export function adaptBackendToTelemetry(raw: any): TelemetryEvent | null {
     args,
     risk_score: riskScore,
     status,
-    diagnosis: diagnosis || (status === "BLOCKED" ? "Blocked by policy engine" : "Execution verified"),
+    diagnosis: diagnosis || (status === "BLOCKED" ? "Blocked by policy engine" : status === "COMPROMISED" ? "Compromised: Unrestricted execution (Shield OFF)" : "Execution verified"),
     rule_id: ruleId,
     event_type: raw.event || undefined,
   };

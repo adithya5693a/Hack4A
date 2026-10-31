@@ -118,9 +118,11 @@ export default function CryptographicAuditVisualizer() {
             onClick={handleVerifyClick}
             disabled={isVerifying}
             className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider active:scale-[0.97] transition-all duration-100 ease-out cursor-pointer disabled:opacity-60 ${
-              verificationResult.valid
+              isTampered
+                ? "bg-crimson/20 border border-crimson text-red-200 hover:bg-crimson/30 shadow-[0_0_12px_rgba(163,28,24,0.3)]"
+                : verificationResult.valid
                 ? "bg-forest border border-emerald-800/90 text-emerald-300 hover:border-emerald-600 hover:bg-emerald-950/40 shadow-[0_0_12px_rgba(6,17,12,0.8)]"
-                : "bg-crimson/20 border border-crimson text-red-200 hover:bg-crimson/30 shadow-[0_0_12px_rgba(163,28,24,0.3)]"
+                : "bg-neutral-900 border border-neutral-700 text-neutral-200 hover:border-neutral-500"
             }`}
           >
             {isVerifying ? (
@@ -128,14 +130,19 @@ export default function CryptographicAuditVisualizer() {
                 <RefreshCw className="h-3.5 w-3.5 animate-spin" />
                 <span>Checking...</span>
               </>
+            ) : isTampered ? (
+              <>
+                <ShieldAlert className="h-3.5 w-3.5 text-crimson" />
+                <span>[Chain Broken - Recheck]</span>
+              </>
             ) : verificationResult.valid ? (
               <>
                 <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
-                <span>[Verify Log Integrity]</span>
+                <span>[Integrity Verified]</span>
               </>
             ) : (
               <>
-                <ShieldAlert className="h-3.5 w-3.5 text-crimson" />
+                <CheckCircle2 className="h-3.5 w-3.5 text-neutral-400" />
                 <span>[Verify Log Integrity]</span>
               </>
             )}
@@ -168,7 +175,7 @@ export default function CryptographicAuditVisualizer() {
         </div>
       </div>
 
-      {/* Alert Banner When Tamper Detected or Valid Banner */}
+      {/* Alert Banner When Tamper Detected, Valid Banner, or Unverified Banner */}
       {isTampered ? (
         <div className="mb-4 p-2.5 rounded-lg bg-crimson/20 border border-crimson text-red-100 flex items-center justify-between text-xs animate-[slideDownIn_180ms_cubic-bezier(0.23,1,0.32,1)] shadow-[0_0_20px_rgba(163,28,24,0.35)]">
           <div className="flex items-center gap-2">
@@ -181,7 +188,7 @@ export default function CryptographicAuditVisualizer() {
             CHAIN BROKEN
           </span>
         </div>
-      ) : (
+      ) : verificationResult.valid ? (
         <div className="mb-4 p-2 rounded-lg bg-forest border border-emerald-900/60 text-emerald-400 flex items-center justify-between text-xs">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 flex-shrink-0" />
@@ -191,6 +198,18 @@ export default function CryptographicAuditVisualizer() {
           </div>
           <span className="text-[10px] text-emerald-500 font-mono">
             Total Blocks: {blocks.length}
+          </span>
+        </div>
+      ) : (
+        <div className="mb-4 p-2 rounded-lg bg-neutral-900 border border-neutral-800 text-neutral-400 flex items-center justify-between text-xs">
+          <div className="flex items-center gap-2">
+            <RefreshCw className="h-3.5 w-3.5 text-neutral-500 flex-shrink-0" />
+            <span className="font-medium tracking-wide text-neutral-300">
+              {verificationResult.message || "Ledger Unverified — Click '[Verify Log Integrity]' to inspect cryptographic chain continuity."}
+            </span>
+          </div>
+          <span className="text-[10px] text-neutral-500 font-mono">
+            {blocks.length} Blocks Pending Check
           </span>
         </div>
       )}

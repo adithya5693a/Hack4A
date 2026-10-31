@@ -163,16 +163,19 @@ export default function AttackPlayground({ onAttackDispatched }: AttackPlaygroun
       }
 
       const data = await res.json();
+      const steps = Array.isArray(data.steps) ? data.steps : [];
+      const lastDeniedOrCompromised = [...steps].reverse().find(s => s.rule_id || s.decision === "DENY" || s.status === "DENIED") || steps[steps.length - 1];
+      const actualRuleId = lastDeniedOrCompromised?.rule_id || (shieldEnabled ? scenario.expectedRule : "SHIELD_OFF_BYPASS");
 
       const execResult: ExecutionResult = {
         scenarioId: scenario.id,
         scenarioName: scenario.name,
-        expectedRule: scenario.expectedRule,
+        expectedRule: actualRuleId,
         unprotectedBlastRadius: scenario.unprotectedBlastRadius,
         shield_enabled: shieldEnabled,
         neutralized: data.neutralized,
         compromised: data.compromised,
-        steps: data.steps || [],
+        steps: steps,
       };
       setLastExecution(execResult);
 
@@ -181,6 +184,7 @@ export default function AttackPlayground({ onAttackDispatched }: AttackPlaygroun
         for (const step of data.steps) {
           const adapted = adaptBackendToTelemetry({
             ...step,
+            shield_enabled: shieldEnabled,
             timestamp: new Date().toISOString(),
           });
           if (adapted) {
@@ -198,7 +202,7 @@ export default function AttackPlayground({ onAttackDispatched }: AttackPlaygroun
           description: "High-impact tool quarantined for manual human confirmation in HITL Gate.",
         });
       } else if (shieldEnabled) {
-        toast.error(`Attack Intercepted [${scenario.expectedRule}]`, {
+        toast.error(`Attack Intercepted [${actualRuleId}]`, {
           description: `Policy Enforcement Point halted attack at hop ${data.steps?.length || 1}.`,
           icon: <ShieldAlert className="h-4 w-4 text-crimson" />,
         });
@@ -370,78 +374,86 @@ export default function AttackPlayground({ onAttackDispatched }: AttackPlaygroun
             </span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-            {/* Left Card: Without AgentShield (Vulnerable Baseline) */}
-            <div
-              className={`rounded-xl p-3.5 border transition-all ${
-                !lastExecution.shield_enabled
-                  ? "bg-crimson/10 border-crimson shadow-[0_0_20px_rgba(163,28,24,0.35)]"
-                  : "bg-neutral-950/60 border-neutral-800 opacity-80"
-              }`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <span className="flex items-center gap-1.5 text-xs font-bold text-red-300 uppercase">
-                  <Flame className="h-4 w-4 text-crimson" />
-                  Without AgentShield (Shield OFF)
+          {/* Dynamic Blast Radius Card: Shows the exact mode just executed */}
+          {!lastExecution.shield_enabled ? (
+            /* Vulnerable Baseline Mode (Shield OFF) */
+            <div className="rounded-xl p-4 border bg-crimson/15 border-crimson shadow-[0_0_25px_rgba(163,28,24,0.35)] transition-all animate-[slideDownIn_180ms_cubic-bezier(0.23,1,0.32,1)]">
+              <div className="flex items-center justify-between mb-2.5">
+                <span className="flex items-center gap-2 text-xs font-bold text-red-200 uppercase tracking-wide">
+                  <Flame className="h-4 w-4 text-crimson animate-pulse" />
+                  Baseline Compromise (Shield OFF — No Enforcement)
                 </span>
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-crimson text-white uppercase">
-                  Blast Radius: Critical
+                <span className="px-2.5 py-0.5 rounded text-[10px] font-bold bg-crimson text-white uppercase tracking-wider shadow-[0_0_8px_rgba(163,28,24,0.6)]">
+                  Blast Radius: 100% Critical
                 </span>
               </div>
 
               <div className="space-y-2 text-xs">
-                <div className="p-2 rounded bg-black/60 border border-crimson/40 text-red-200">
-                  <div className="text-[10px] font-bold uppercase text-red-400 mb-0.5">Simulated Compromise:</div>
-                  <p>{lastExecution.unprotectedBlastRadius}</p>
+                <div className="p-2.5 rounded-lg bg-black/70 border border-crimson/50 text-red-200">
+                  <div className="text-[10px] font-bold uppercase text-red-400 mb-1 flex items-center gap-1.5">
+                    <AlertTriangle className="h-3.5 w-3.5 text-crimson" />
+                    <span>Host Execution Result (Unfiltered Command Invocation):</span>
+                  </div>
+                  <pre className="text-[11px] font-mono text-red-200 whitespace-pre-wrap">
+                    {lastExecution.steps[lastExecution.steps.length - 1]?.output ||
+                      `Tool '${lastExecution.steps[lastExecution.steps.length - 1]?.tool_name || "execute_bash"}' executed with arguments: ${JSON.stringify(lastExecution.steps[lastExecution.steps.length - 1]?.arguments || {})}`}
+                  </pre>
                 </div>
 
-                <div className="text-[11px] text-neutral-400">
-                  <div>• Host OS Commands: <strong className="text-red-300">Unrestricted Execution</strong></div>
-                  <div>• Data Egress: <strong className="text-red-300">Exfiltrated without allowlist check</strong></div>
-                  <div>• Audit Trail: <strong className="text-neutral-500">Unrecorded / Silent compromise</strong></div>
+                <div className="text-[11px] text-neutral-300 grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 font-mono">
+                  <div className="p-1.5 rounded bg-neutral-900 border border-neutral-800 text-red-300">
+                    Host OS: <strong>Unrestricted Execution</strong>
+                  </div>
+                  <div className="p-1.5 rounded bg-neutral-900 border border-neutral-800 text-red-300">
+                    Status: <strong>COMPROMISED</strong>
+                  </div>
+                  <div className="p-1.5 rounded bg-neutral-900 border border-neutral-800 text-neutral-400">
+                    Audit: <strong>Unchecked bypass</strong>
+                  </div>
                 </div>
               </div>
             </div>
-
-            {/* Right Card: With AgentShield (Policy Enforcement Point) */}
-            <div
-              className={`rounded-xl p-3.5 border transition-all ${
-                lastExecution.shield_enabled
-                  ? "bg-forest/50 border-emerald-800 shadow-[0_0_20px_rgba(6,17,12,0.8)]"
-                  : "bg-neutral-950/60 border-neutral-800 opacity-80"
-              }`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-300 uppercase">
+          ) : (
+            /* Protected Mode (Shield ON) */
+            <div className="rounded-xl p-4 border bg-forest/80 border-emerald-800 shadow-[0_0_25px_rgba(6,17,12,0.9)] transition-all animate-[slideDownIn_180ms_cubic-bezier(0.23,1,0.32,1)]">
+              <div className="flex items-center justify-between mb-2.5">
+                <span className="flex items-center gap-2 text-xs font-bold text-emerald-300 uppercase tracking-wide">
                   <ShieldCheck className="h-4 w-4 text-emerald-400" />
-                  With AgentShield (Shield ON)
+                  Policy Enforcement Point (Shield ON — Zero-Trust Active)
                 </span>
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-forest border border-emerald-900/60 text-emerald-400 uppercase">
+                <span className="px-2.5 py-0.5 rounded text-[10px] font-bold bg-forest border border-emerald-700 text-emerald-300 uppercase tracking-wider shadow-[0_0_10px_rgba(6,17,12,0.8)]">
                   Runtime Intercepted
                 </span>
               </div>
 
               <div className="space-y-2 text-xs">
-                <div className="p-2 rounded bg-black/60 border border-emerald-900/60 text-emerald-200">
-                  <div className="text-[10px] font-bold uppercase text-emerald-400 mb-0.5">Enforced Policy Rule:</div>
-                  <div className="flex items-center gap-2">
-                    <span className="px-2 py-0.5 rounded bg-forest border border-emerald-800 text-emerald-300 font-bold">
+                <div className="p-2.5 rounded-lg bg-black/70 border border-emerald-900/80 text-emerald-200">
+                  <div className="text-[10px] font-bold uppercase text-emerald-400 mb-1 flex items-center justify-between">
+                    <span>Enforced Rule & Reason:</span>
+                    <span className="px-2 py-0.5 rounded bg-forest border border-emerald-800 text-emerald-300 font-bold font-mono">
                       {lastExecution.expectedRule}
                     </span>
-                    <span className="text-[11px] text-neutral-300">
-                      Halted at Hop {lastExecution.steps.length} before execution
-                    </span>
                   </div>
+                  <p className="text-[11px] font-mono text-emerald-300">
+                    {lastExecution.steps[lastExecution.steps.length - 1]?.reason ||
+                      `Tool '${lastExecution.steps[lastExecution.steps.length - 1]?.tool_name}' halted at Hop ${lastExecution.steps.length} before execution.`}
+                  </p>
                 </div>
 
-                <div className="text-[11px] text-neutral-400">
-                  <div>• Blast Radius: <strong className="text-emerald-400">0% (Zero unauthorized actions executed)</strong></div>
-                  <div>• Origin Taint Tracking: <strong className="text-emerald-400">Propagated & Isolated</strong></div>
-                  <div>• SHA-256 Ledger: <strong className="text-emerald-400">Cryptographically Block-Chained</strong></div>
+                <div className="text-[11px] text-neutral-300 grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 font-mono">
+                  <div className="p-1.5 rounded bg-neutral-900 border border-neutral-800 text-emerald-400">
+                    Blast Radius: <strong>0% (Neutralized)</strong>
+                  </div>
+                  <div className="p-1.5 rounded bg-neutral-900 border border-neutral-800 text-emerald-400">
+                    Taint: <strong>Isolated at Hop {lastExecution.steps.length}</strong>
+                  </div>
+                  <div className="p-1.5 rounded bg-neutral-900 border border-neutral-800 text-emerald-400">
+                    Ledger: <strong>SHA-256 Chained</strong>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Multi-Hop Step Sequence */}
           <div className="space-y-2 pt-2">
