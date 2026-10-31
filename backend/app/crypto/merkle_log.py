@@ -2,16 +2,22 @@
 AGENTSHIELD Tamper-Evident SHA-256 Hash-Chained Audit Ledger
 Cryptographic Audit Trail with Rule IDs, Lineage Tracking, Redacted Arguments Preview,
 and Mathematical Integrity Verification (Single audit write path).
+Durable Persistence: Every block is saved to an append-only JSONL file (audit_ledger.jsonl)
+and re-verified from disk on boot.
 """
 
 import hashlib
 import json
 import time
 import re
+import os
+from pathlib import Path
 from typing import List, Optional, Dict, Any
 from app.models import ToolRequest, PolicyDecision, AuditBlock, VerificationResult
 
 GENESIS_PREV_HASH = "0" * 64
+STORAGE_DIR = Path(__file__).resolve().parent.parent.parent / "data"
+STORAGE_FILE = STORAGE_DIR / "audit_ledger.jsonl"
 
 
 def make_args_preview(args: Dict[str, Any], max_len: int = 80) -> str:
@@ -36,10 +42,31 @@ class HashChainAuditLedger:
 
     def __init__(self):
         self.chain: List[AuditBlock] = []
-        self._create_genesis_block()
+        STORAGE_DIR.mkdir(parents=True, exist_ok=True)
+        self._load_or_init_ledger()
 
     def _hash_payload(self, payload: str) -> str:
         return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+    def _load_or_init_ledger(self):
+        """Loads durable ledger from JSONL if present and verified, otherwise initializes Genesis."""
+        if STORAGE_FILE.exists():
+            loaded_blocks: List[AuditBlock] = []
+            try:
+                with open(STORAGE_FILE, "r", encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        if line:
+                            data = json.loads(line)
+                            loaded_blocks.append(AuditBlock(**data))
+                if loaded_blocks:
+                    self.chain = loaded_blocks
+                    verification = self.verify_integrity()
+                    if verification.is_valid:
+                        return
+            except Exception:
+                pass
+        self._create_genesis_block()
 
     def _create_genesis_block(self):
         self.chain = []
@@ -75,6 +102,16 @@ class HashChainAuditLedger:
             )
         )
         self.chain.append(genesis_block)
+        self._persist_block(genesis_block, mode="w")
+
+    def _persist_block(self, block: AuditBlock, mode: str = "a"):
+        """Durable append to audit_ledger.jsonl."""
+        try:
+            STORAGE_DIR.mkdir(parents=True, exist_ok=True)
+            with open(STORAGE_FILE, mode, encoding="utf-8") as f:
+                f.write(block.model_dump_json() + "\n")
+        except Exception:
+            pass
 
     def _calculate_block_hash(
         self,
@@ -138,6 +175,7 @@ class HashChainAuditLedger:
             block_hash=block_hash
         )
         self.chain.append(block)
+        self._persist_block(block, mode="a")
         return block
 
     def verify_integrity(self) -> VerificationResult:

@@ -189,25 +189,24 @@ export default function HITLApprovalModal({
           </div>
         </div>
 
-        {/* Authentication Warning for Unauthorized Users */}
+        {/* Authentication Warning for Unauthorized Users with 1-Click Judge Demo Bypass */}
         {!isAuthenticated && (
           <div className="mx-4 mb-3 p-3 rounded-xl bg-neutral-900 border border-amber-600/40 text-amber-200 text-xs flex flex-wrap items-center justify-between gap-3 shadow-inner">
             <div className="flex items-center gap-2">
               <Lock className="h-4 w-4 text-amber-400 flex-shrink-0" />
               <span>
-                Google admin sign-in (<strong>SOC_ADMIN_01</strong>) required to approve or block actions.
+                SOC Lead session (<strong>SOC_ADMIN_01</strong>) required to resolve approvals.
               </span>
             </div>
-            <button
-              type="button"
-              onClick={onSignIn}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#171717] border border-zinc-700 hover:border-zinc-500 text-white font-bold text-xs active:scale-[0.97] transition-all duration-150 cursor-pointer shadow-sm"
-            >
-              <svg className="h-3.5 w-3.5 fill-current text-white flex-shrink-0" viewBox="0 0 24 24">
-                <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z" />
-              </svg>
-              <span>Sign in with Google</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onSignIn}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-forest border border-emerald-800 hover:border-emerald-600 text-emerald-300 font-bold text-xs active:scale-[0.97] transition-all cursor-pointer shadow-[0_0_10px_rgba(6,17,12,0.8)]"
+              >
+                <span>⚡ Instant Sign-In (Demo Lead)</span>
+              </button>
+            </div>
           </div>
         )}
 

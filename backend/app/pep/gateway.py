@@ -310,6 +310,23 @@ class PEPGateway:
                         reason=f"MALICIOUS COMMAND: Threat tokens detected in shell command: {cmd}",
                         reasons=["rm -rf targeting / ~ or *", *arg_risk.matches]
                     )
+
+                # Rule R-EVASION-01: Anti-Evasion & Obfuscation Guard (Base64, Hex, Entropy)
+                from app.agent.intent_parser import deobfuscate_text
+                _, evasion_detected, evasion_tags = deobfuscate_text(cmd)
+                obf_tags = [t for t in evasion_tags if t != "pipe_to_shell"]
+                if obf_tags:
+                    return PolicyDecision(
+                        call_id=request.call_id,
+                        status=DecisionStatus.DENY,
+                        rule_id="R-EVASION-01",
+                        risk_score=99.0,
+                        risk_level="CRITICAL",
+                        tier=3,
+                        reason=f"ANTI-EVASION INTERCEPTION: Obfuscated shell instruction detected ({', '.join(obf_tags)}). Blocked by Anti-Evasion Engine.",
+                        reasons=["evasion construct detected", *[f"obfuscation:{t}" for t in obf_tags]]
+                    )
+
                 return PolicyDecision(
                     call_id=request.call_id,
                     status=DecisionStatus.REQUIRE_APPROVAL,

@@ -133,11 +133,75 @@ async def pep_scan_output(body: ScanOutputRequest):
 
 @app.get("/api/pep/policy")
 async def pep_policy() -> dict:
+    from app.pep.policy import ROLE_PERMISSIONS, AGENT_REGISTRY
     return {
         "tool_tiers": TOOL_TIERS,
         "admin_only_tools": sorted(ADMIN_ONLY_TOOLS),
         "risk_threshold": RISK_ESCALATION_THRESHOLD,
         "allowed_email_domains": sorted(ALLOWED_EMAIL_DOMAINS),
+        "role_permissions": ROLE_PERMISSIONS,
+        "agent_registry": AGENT_REGISTRY,
+    }
+
+
+@app.post("/api/pep/intercept-tool-call")
+async def intercept_standard_tool_call(payload: dict):
+    import json
+    import uuid
+    results = []
+    agent_id = payload.get("agent_id", "agent_worker_01")
+
+    if "tool_calls" in payload and isinstance(payload["tool_calls"], list):
+        for tc in payload["tool_calls"]:
+            func = tc.get("function", {})
+            name = func.get("name", "")
+            raw_args = func.get("arguments", "{}")
+            parsed_args = json.loads(raw_args) if isinstance(raw_args, str) else raw_args
+            call_id = tc.get("id") or f"call_{uuid.uuid4().hex[:8]}"
+            req = ToolRequest(
+                call_id=call_id,
+                agent_id=agent_id,
+                tool_name=name,
+                arguments=parsed_args,
+                source="untrusted_content" if payload.get("untrusted") else "user_prompt"
+            )
+            dec = await gateway.intercept(req, timeout=0.2)
+            results.append({
+                "tool_call_id": req.call_id,
+                "tool_name": name,
+                "decision": dec.status.value if hasattr(dec.status, "value") else str(dec.status),
+                "rule_id": dec.rule_id,
+                "risk_score": dec.risk_score,
+                "reason": dec.reason
+            })
+    elif "name" in payload or "tool_name" in payload:
+        name = payload.get("name") or payload.get("tool_name")
+        args = payload.get("input") or payload.get("arguments") or {}
+        call_id = payload.get("id") or f"call_{uuid.uuid4().hex[:8]}"
+        req = ToolRequest(
+            call_id=call_id,
+            agent_id=agent_id,
+            tool_name=name,
+            arguments=args,
+            source="untrusted_content" if payload.get("untrusted") else "user_prompt"
+        )
+        dec = await gateway.intercept(req, timeout=0.2)
+        results.append({
+            "tool_call_id": req.call_id,
+            "tool_name": name,
+            "decision": dec.status.value if hasattr(dec.status, "value") else str(dec.status),
+            "rule_id": dec.rule_id,
+            "risk_score": dec.risk_score,
+            "reason": dec.reason
+        })
+    else:
+        raise HTTPException(status_code=400, detail="Invalid payload format. Expected OpenAI 'tool_calls' array or Anthropic tool call schema.")
+
+    overall_status = "BLOCKED" if any(r["decision"] == "DENY" for r in results) else "ALLOWED"
+    return {
+        "status": overall_status,
+        "interceptions": results,
+        "total_calls": len(results)
     }
 
 

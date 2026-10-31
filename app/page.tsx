@@ -9,6 +9,7 @@ import CryptographicAuditVisualizer from "@/components/CryptographicAuditVisuali
 import StatsPanel from "@/components/StatsPanel";
 import LiveTelemetryStream from "@/components/LiveTelemetryStream";
 import HITLApprovalModal from "@/components/HITLApprovalModal";
+import MCPPolicyDrawer from "@/components/MCPPolicyDrawer";
 import { useSecurityStream } from "@/hooks/useSecurityStream";
 import type { TelemetryEvent, ApprovalDecision } from "@/types/telemetry";
 import { adaptBackendToTelemetry } from "@/lib/telemetry-adapter";
@@ -43,6 +44,10 @@ export default function SOCDashboardPage() {
   const [activeModalEvent, setActiveModalEvent] = useState<TelemetryEvent | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+
+  // MCP Policy Drawer and Judge Tour States
+  const [isMCPPolicyOpen, setIsMCPPolicyOpen] = useState<boolean>(false);
+  const [isTourRunning, setIsTourRunning] = useState<boolean>(false);
 
   // Keep track of events already auto-prompted so we don't bombard the user repeatedly
   const autoPromptedIdsRef = useRef<Set<string>>(new Set());
@@ -185,6 +190,90 @@ export default function SOCDashboardPage() {
     addEvents(dispatchedEvents);
   };
 
+  // 1-Click Judge Audit Tour: Runs an automated 5-stage live PEP demonstration
+  const handleRunJudgeTour = async () => {
+    if (isTourRunning) return;
+    setIsTourRunning(true);
+    toast.info("⚡ Judge Audit Tour Initiated", {
+      description: "Executing 5-stage live verification across all defense layers...",
+    });
+
+    const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    try {
+      // Stage 1: Legitimate Agent Operation
+      toast("Stage 1/5: Safe Read Execution", {
+        description: "Checking compliant MCP tool authorization...",
+      });
+      const s1Res = await fetch(`${BACKEND_URL}/api/attacks/legitimate_approval?shield_enabled=true&auto_resolve=approve`, {
+        method: "POST",
+      });
+      if (s1Res.ok) {
+        const d1 = await s1Res.json();
+        if (Array.isArray(d1.steps)) {
+          addEvents(d1.steps.map((s: any) => adaptBackendToTelemetry({ ...s, timestamp: new Date().toISOString() })).filter(Boolean) as TelemetryEvent[]);
+        }
+      }
+      await sleep(1400);
+
+      // Stage 2: Prompt Injection / Taint Tracking
+      toast("Stage 2/5: Poisoned Invoice Attack", {
+        description: "Triggering indirect prompt injection & Taint Guard (R-TAINT-01)...",
+      });
+      const s2Res = await fetch(`${BACKEND_URL}/api/attacks/poisoned_invoice?shield_enabled=true`, {
+        method: "POST",
+      });
+      if (s2Res.ok) {
+        const d2 = await s2Res.json();
+        if (Array.isArray(d2.steps)) {
+          addEvents(d2.steps.map((s: any) => adaptBackendToTelemetry({ ...s, timestamp: new Date().toISOString() })).filter(Boolean) as TelemetryEvent[]);
+        }
+      }
+      await sleep(1400);
+
+      // Stage 3: Privilege Escalation
+      toast("Stage 3/5: RBAC Violation Intercept", {
+        description: "Executing unauthorized bash shell escalation (R-RBAC-01)...",
+      });
+      const s3Res = await fetch(`${BACKEND_URL}/api/attacks/privilege_escalation?shield_enabled=true`, {
+        method: "POST",
+      });
+      if (s3Res.ok) {
+        const d3 = await s3Res.json();
+        if (Array.isArray(d3.steps)) {
+          addEvents(d3.steps.map((s: any) => adaptBackendToTelemetry({ ...s, timestamp: new Date().toISOString() })).filter(Boolean) as TelemetryEvent[]);
+        }
+      }
+      await sleep(1400);
+
+      // Stage 4: Open MCP Policy Matrix for Judge
+      toast("Stage 4/5: MCP Policy Inspection", {
+        description: "Displaying 3-tier Role-Based Tool Access Matrix...",
+      });
+      setIsMCPPolicyOpen(true);
+      await sleep(2200);
+      setIsMCPPolicyOpen(false);
+
+      // Stage 5: Cryptographic Ledger Verification
+      toast("Stage 5/5: Merkle Ledger Integrity Check", {
+        description: "Verifying SHA-256 block chain hash continuity...",
+      });
+      const s5Res = await fetch(`${BACKEND_URL}/api/audit/verify`);
+      if (s5Res.ok) {
+        const d5 = await s5Res.json();
+        toast.success("🎯 Judge Tour Completed!", {
+          description: `All layers verified. Ledger valid: ${d5.is_valid}, Length: ${d5.chain_length} blocks.`,
+        });
+      }
+    } catch (err: any) {
+      toast.error("Judge Tour Interrupted", {
+        description: `Backend communication issue: ${err.message || String(err)}`,
+      });
+    } finally {
+      setIsTourRunning(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-charcoal text-neutral-200 flex flex-col font-mono selection:bg-crimson/40 selection:text-white">
       {/* Background High-Tech Subtle Glow Elements */}
@@ -204,6 +293,9 @@ export default function SOCDashboardPage() {
         isAuthenticated={isAuthenticated}
         onLogin={() => setIsAuthenticated(true)}
         onLogout={() => setIsAuthenticated(false)}
+        onOpenMCPPolicy={() => setIsMCPPolicyOpen(true)}
+        onRunJudgeTour={handleRunJudgeTour}
+        isTourRunning={isTourRunning}
       />
 
       {/* Main SOC Dashboard Viewport */}
@@ -474,6 +566,12 @@ export default function SOCDashboardPage() {
         queueCount={pendingQueue.length}
         isAuthenticated={isAuthenticated}
         onSignIn={() => setIsAuthenticated(true)}
+      />
+
+      {/* Interactive MCP Policy Matrix Drawer */}
+      <MCPPolicyDrawer
+        isOpen={isMCPPolicyOpen}
+        onClose={() => setIsMCPPolicyOpen(false)}
       />
 
       {/* SOC Bottom Status Bar (Honest Chrome: SHA-256 hash-chained audit log) */}

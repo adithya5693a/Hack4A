@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Shield, Wifi, WifiOff, Activity, RefreshCw } from "lucide-react";
+import { Shield, Wifi, WifiOff, Activity, RefreshCw, Zap, Cpu } from "lucide-react";
 import GoogleAuthWidget from "./GoogleAuthWidget";
+import { BACKEND_URL } from "@/lib/api-config";
 
 interface SOCHeaderProps {
   connected: boolean;
@@ -12,6 +13,9 @@ interface SOCHeaderProps {
   isAuthenticated: boolean;
   onLogin: () => void;
   onLogout: () => void;
+  onOpenMCPPolicy?: () => void;
+  onRunJudgeTour?: () => void;
+  isTourRunning?: boolean;
 }
 
 export default function SOCHeader({
@@ -22,9 +26,14 @@ export default function SOCHeader({
   isAuthenticated,
   onLogin,
   onLogout,
+  onOpenMCPPolicy,
+  onRunJudgeTour,
+  isTourRunning = false,
 }: SOCHeaderProps) {
   const [time, setTime] = useState<string>("");
+  const [latency, setLatency] = useState<number | null>(null);
 
+  // Time ticker
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
@@ -33,6 +42,32 @@ export default function SOCHeader({
     updateTime();
     const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
+  }, []);
+
+  // Live Backend Ping Latency Poller (Feature 8)
+  useEffect(() => {
+    let isMounted = true;
+    const pingBackend = async () => {
+      try {
+        const start = performance.now();
+        const res = await fetch(`${BACKEND_URL}/health`, { cache: "no-store" });
+        if (res.ok && isMounted) {
+          const duration = Math.round(performance.now() - start);
+          setLatency(duration);
+        } else if (isMounted) {
+          setLatency(null);
+        }
+      } catch {
+        if (isMounted) setLatency(null);
+      }
+    };
+
+    pingBackend();
+    const interval = setInterval(pingBackend, 5000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
   return (
@@ -60,7 +95,7 @@ export default function SOCHeader({
         </div>
 
         {/* Plain-English Navigation */}
-        <nav className="hidden xl:flex items-center gap-6 font-mono text-xs tracking-widest uppercase text-neutral-400">
+        <nav className="hidden xl:flex items-center gap-5 font-mono text-xs tracking-widest uppercase text-neutral-400">
           <a
             href="#playground"
             className="hover:text-red-300 hover:drop-shadow-[0_0_8px_rgba(163,28,24,0.5)] transition-all"
@@ -91,32 +126,46 @@ export default function SOCHeader({
         </nav>
 
         {/* Status Indicators & Controls */}
-        <div className="flex items-center gap-3 sm:gap-6">
-          {/* Real-time Telemetry Status */}
-          <div className="hidden md:flex items-center gap-2 border-l border-neutral-800 pl-4 font-mono text-xs text-neutral-400">
-            <Activity className="h-3.5 w-3.5 text-crimson animate-pulse" />
-            <span>BUFFER: <strong className="text-neutral-200">{eventCount}</strong></span>
-          </div>
+        <div className="flex items-center gap-2.5 sm:gap-4">
+          {/* Feature 5: 1-Click Judge Validation Tour */}
+          {onRunJudgeTour && (
+            <button
+              onClick={onRunJudgeTour}
+              disabled={isTourRunning}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono font-bold uppercase tracking-wider rounded-lg bg-gradient-to-r from-amber-600/30 to-crimson/30 border border-amber-500 hover:border-amber-400 text-amber-200 active:scale-[0.97] transition-all shadow-[0_0_15px_rgba(245,158,11,0.35)] cursor-pointer disabled:opacity-50"
+              title="Run 5-Stage Automated Demonstration for Hackathon Reviewers"
+            >
+              <Zap className="h-3.5 w-3.5 text-amber-400 animate-pulse" />
+              <span>{isTourRunning ? "Validating Tour..." : "⚡ Judge Audit Tour"}</span>
+            </button>
+          )}
 
-          {/* Time display */}
-          <div className="hidden sm:block font-mono text-xs text-neutral-400 bg-neutral-900/80 px-2.5 py-1 rounded border border-neutral-800">
-            {time || "SYNCHRONIZING..."}
-          </div>
+          {/* Feature 6: MCP Policies Drawer Trigger */}
+          {onOpenMCPPolicy && (
+            <button
+              onClick={onOpenMCPPolicy}
+              className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono font-semibold rounded-lg bg-neutral-900 border border-neutral-700 hover:border-emerald-600 hover:text-emerald-300 text-neutral-300 active:scale-[0.97] transition-all cursor-pointer shadow-sm"
+              title="Open MCP Tool Permission Profiles Matrix"
+            >
+              <Cpu className="h-3.5 w-3.5 text-emerald-400" />
+              <span>MCP Policies</span>
+            </button>
+          )}
 
-          {/* Connection Status Pill */}
+          {/* Feature 8: Live Backend Connection & Ping Latency Indicator */}
           <div
             className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono font-medium border ${
-              connected
+              connected && latency !== null
                 ? "bg-forest border-emerald-900/80 text-emerald-400 shadow-[0_0_10px_rgba(6,17,12,0.8)]"
                 : mockMode
                 ? "bg-neutral-900 border-amber-600/60 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.2)]"
                 : "bg-neutral-900 border-crimson/50 text-red-300"
             }`}
           >
-            {connected ? (
+            {connected && latency !== null ? (
               <>
                 <Wifi className="h-3.5 w-3.5 text-emerald-400" />
-                <span>FIREWALL ACTIVE</span>
+                <span>PEP ONLINE ({latency}ms)</span>
               </>
             ) : mockMode ? (
               <>
@@ -126,25 +175,12 @@ export default function SOCHeader({
             ) : (
               <>
                 <WifiOff className="h-3.5 w-3.5 text-crimson" />
-                <span>STANDBY</span>
+                <span>PEP OFFLINE</span>
               </>
             )}
           </div>
 
-          {/* Toggle Mock Button with crisp tactile feedback */}
-          <button
-            onClick={onToggleMock}
-            className={`px-3 py-1 text-xs font-mono font-medium rounded-lg border active:scale-[0.97] transition-all duration-100 ease-out cursor-pointer ${
-              mockMode
-                ? "bg-crimson/20 border-crimson text-red-200 hover:bg-crimson/30 shadow-[0_0_12px_rgba(163,28,24,0.35)]"
-                : "bg-forest border-emerald-900/80 text-emerald-300 hover:bg-forest/80"
-            }`}
-            title="Toggle between Backend WebSocket and Simulated Stream"
-          >
-            {mockMode ? "Stop Feed" : "Start Feed"}
-          </button>
-
-          {/* Google Authentication Widget */}
+          {/* Google Authentication Widget with 1-Click Demo Lead Bypass */}
           <GoogleAuthWidget
             isAuthenticated={isAuthenticated}
             onLogin={onLogin}
