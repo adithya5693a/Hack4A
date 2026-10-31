@@ -65,10 +65,12 @@ class HashChainAuditLedger:
                 timestamp=now_ts,
                 call_id="genesis_call_000",
                 agent_id="SYSTEM_ROOT",
+                agent_role="system",
                 tool_name="GENESIS",
                 arguments_hash=self._hash_payload("{}"),
                 decision="ALLOW",
                 rule_id="R-GENESIS-00",
+                risk_score=0.0,
                 previous_hash=GENESIS_PREV_HASH
             )
         )
@@ -80,14 +82,17 @@ class HashChainAuditLedger:
         timestamp: float,
         call_id: str,
         agent_id: str,
+        agent_role: str,
         tool_name: str,
         arguments_hash: str,
         decision: str,
         rule_id: str,
+        risk_score: float,
         previous_hash: str
     ) -> str:
         ts_str = f"{float(timestamp):.4f}" if isinstance(timestamp, (int, float)) else str(timestamp)
-        raw = f"{index}|{ts_str}|{call_id}|{agent_id}|{tool_name}|{arguments_hash}|{decision}|{rule_id}|{previous_hash}"
+        score_str = f"{float(risk_score):.1f}"
+        raw = f"{index}|{ts_str}|{call_id}|{agent_id}|{agent_role}|{tool_name}|{arguments_hash}|{decision}|{rule_id}|{score_str}|{previous_hash}"
         return self._hash_payload(raw)
 
     def record_event(self, request: ToolRequest, decision: PolicyDecision) -> AuditBlock:
@@ -99,15 +104,18 @@ class HashChainAuditLedger:
         new_index = len(self.chain)
 
         dec_str = decision.status.value if hasattr(decision.status, "value") else str(decision.status)
+        role = request.agent_role or "unknown"
         block_hash = self._calculate_block_hash(
             index=new_index,
             timestamp=decision.timestamp,
             call_id=request.call_id,
             agent_id=request.agent_id,
+            agent_role=role,
             tool_name=request.tool_name,
             arguments_hash=args_hash,
             decision=dec_str,
             rule_id=decision.rule_id,
+            risk_score=decision.risk_score,
             previous_hash=prev_block.block_hash
         )
 
@@ -154,10 +162,12 @@ class HashChainAuditLedger:
                 timestamp=current.timestamp,
                 call_id=current.call_id,
                 agent_id=current.agent_id,
+                agent_role=current.agent_role or "unknown",
                 tool_name=current.tool_name,
                 arguments_hash=current.arguments_hash,
                 decision=current.decision,
                 rule_id=current.rule_id,
+                risk_score=current.risk_score,
                 previous_hash=current.previous_hash
             )
 

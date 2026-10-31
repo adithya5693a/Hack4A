@@ -240,9 +240,9 @@ class PEPGateway:
                         reason="EGRESS ALERT: Email destination derived from UNTRUSTED data source.",
                         reasons=["EGRESS ALERT: Email destination derived from UNTRUSTED data source."]
                     )
-                domain = target_to.split("@")[-1].lower() if "@" in target_to else ""
-                all_allowed_domains = set(EMAIL_ALLOWLIST) | set(ALLOWED_EMAIL_DOMAINS)
-                if not any(domain == d or target_to.endswith(d) for d in all_allowed_domains):
+                domain = target_to.split("@")[-1].lower().strip() if "@" in target_to else ""
+                all_allowed_domains = {d.lower().strip() for d in (set(EMAIL_ALLOWLIST) | set(ALLOWED_EMAIL_DOMAINS))}
+                if not any(domain == d or domain.endswith("." + d) for d in all_allowed_domains):
                     return PolicyDecision(
                         call_id=request.call_id,
                         status=DecisionStatus.DENY,
@@ -513,8 +513,21 @@ class PEPGateway:
                     reasons=[*decision.reasons, outcome]
                 )
 
-        # Record single authoritative block in audit ledger
-        await self._audit(request, decision)
+        # Record single authoritative block in audit ledger (Fail-Closed)
+        try:
+            await self._audit(request, decision)
+        except Exception:
+            logger.exception("AUDIT FAILURE: Ledger write threw exception. Failing closed.")
+            return PolicyDecision(
+                call_id=request.call_id,
+                status=DecisionStatus.DENY,
+                rule_id="R-AUDIT-FAIL",
+                risk_score=100.0,
+                risk_level="CRITICAL",
+                tier=3,
+                reason="AUDIT FAILURE: Audit ledger write failed. Execution denied (fail-closed).",
+                reasons=["AUDIT FAILURE: Audit ledger write failed. Execution denied (fail-closed)."]
+            )
         return decision
 
     async def enforce(
@@ -534,7 +547,8 @@ class PEPGateway:
             call_id=call_id,
             reviewer="security_admin"
         )
-        return self._approval_manager.resolve(call_id, action)
+        res = self._approval_manager.resolve(call_id, action)
+        return res in (True, "RESOLVED")
 
     def _is_tainted(self, agent_id: str) -> bool:
         now = time.monotonic()
@@ -583,10 +597,7 @@ class PEPGateway:
 
     async def _audit(self, request: ToolRequest, decision: PolicyDecision) -> None:
         if self._audit_hook is not None:
-            try:
-                await self._audit_hook(request, decision)
-            except Exception:
-                logger.exception("audit hook failed")
+            await self._audit_hook(request, decision)
         else:
             merkle_ledger.record_event(request, decision)
 

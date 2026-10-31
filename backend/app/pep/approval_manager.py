@@ -17,10 +17,16 @@ from app.models import (
 Broadcaster = Callable[[dict[str, Any]], Awaitable[None]]
 
 
+class ApprovalAlreadyConsumedError(Exception):
+    """Raised when an approval is replayed after already being consumed."""
+    pass
+
+
 class ApprovalManager:
     def __init__(self, broadcaster: Broadcaster) -> None:
         self._broadcaster = broadcaster
         self._pending: dict[str, dict[str, Any]] = {}
+        self._consumed: set[str] = set()
         self._lock = threading.Lock()
 
     async def wait_for_human(
@@ -98,9 +104,12 @@ class ApprovalManager:
 
     def resolve(self, call_id: str, action: ApprovalAction) -> bool:
         with self._lock:
+            if call_id in self._consumed:
+                raise ApprovalAlreadyConsumedError(f"Approval for call_id '{call_id}' has already been consumed.")
             item = self._pending.get(call_id)
             if item is None:
                 return False
+            self._consumed.add(call_id)
             item["result"] = action
             item["event"].set()
             return True

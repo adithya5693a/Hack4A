@@ -139,4 +139,5 @@ async def test_crashing_audit_hook_does_not_break_evaluate() -> None:
 
     gw = _gateway(audit_hook=boom)
     decision = await gw.intercept(_req("read_file", {"path": "ok.txt"}))
-    assert decision.status == DecisionStatus.ALLOW
+    assert decision.status == DecisionStatus.DENY
+    assert decision.rule_id == "R-AUDIT-FAIL"

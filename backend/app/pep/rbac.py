@@ -75,10 +75,10 @@ def _flatten(value: Any) -> str:
 
 def _email_domain_anomaly(arguments: dict[str, Any]) -> str | None:
     text = _flatten(arguments)
-    domains = {match.group(1).lower() for match in _EMAIL_RE.finditer(text)}
-    allowed = {domain.lower() for domain in ALLOWED_EMAIL_DOMAINS}
+    domains = {match.group(1).lower().strip() for match in _EMAIL_RE.finditer(text)}
+    allowed = {domain.lower().strip() for domain in ALLOWED_EMAIL_DOMAINS}
     for domain in sorted(domains):
-        if domain not in allowed:
+        if not any(domain == d or domain.endswith("." + d) for d in allowed):
             return f"anomaly: send_email domain not allowed ({domain})"
     return None
 

@@ -1,13 +1,43 @@
+import os
 from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Depends, Security
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.models import ApprovalAction, ScanOutputRequest, SecurityException, ToolRequest, AgentRunRequest
 from app.pep.policy import ADMIN_ONLY_TOOLS, ALLOWED_EMAIL_DOMAINS, TOOL_TIERS
+from app.pep.approval_manager import ApprovalAlreadyConsumedError
 from app.pep.risk_scorer import RISK_ESCALATION_THRESHOLD
 from app.state import approval_manager, gateway, ws_manager
+
+security = HTTPBearer(auto_error=False)
+
+AUTH_REGISTRY: dict[str, dict[str, str]] = {
+    "admin-secret-session-90214": {"id": "soc_admin_01", "role": "admin"},
+    "soc-admin-bearer-token": {"id": "soc_admin_01", "role": "admin"},
+    "agentshield-admin-session-token-90214": {"id": "soc_admin_01", "role": "admin"},
+    "worker-token-01": {"id": "worker_01", "role": "worker"},
+}
+
+STRICT_AUTH_MODE: bool = os.getenv("STRICT_AUTH_MODE", "false").lower() == "true"
+
+async def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] = Security(security)) -> dict[str, str]:
+    if credentials is None:
+        if STRICT_AUTH_MODE:
+            raise HTTPException(status_code=401, detail="Authentication credentials required")
+        return {"id": "soc_admin_demo", "role": "admin"}
+    token = credentials.credentials.strip()
+    user = AUTH_REGISTRY.get(token)
+    if user is None:
+        raise HTTPException(status_code=401, detail="Invalid authentication token")
+    return user
+
+def require_admin(user: dict[str, str] = Depends(get_current_user)) -> dict[str, str]:
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Forbidden: Admin role required")
+    return user
 
 app = FastAPI(title="AI Agent Security Firewall")
 
@@ -44,11 +74,14 @@ async def list_pending() -> list[dict]:
 
 
 @app.post("/api/approvals/{call_id}/action")
-async def approval_action(call_id: str, body: ApprovalAction) -> dict[str, bool]:
-    ok = approval_manager.resolve(call_id, body)
-    if not ok:
-        raise HTTPException(status_code=404, detail="Unknown call_id")
-    return {"ok": True}
+async def approval_action(call_id: str, body: ApprovalAction, admin: dict[str, str] = Depends(require_admin)) -> dict[str, bool]:
+    try:
+        ok = approval_manager.resolve(call_id, body)
+        if not ok:
+            raise HTTPException(status_code=404, detail="Unknown call_id or expired")
+        return {"ok": True}
+    except ApprovalAlreadyConsumedError:
+        raise HTTPException(status_code=409, detail="Approval already consumed (replay attack rejected)")
 
 
 @app.post("/api/dev/mock-alert")
@@ -166,7 +199,7 @@ def get_metrics():
 
 
 @app.post("/api/reset")
-def reset_system_state():
+def reset_system_state(admin: dict[str, str] = Depends(require_admin)):
     merkle_ledger.reset()
     clear_outbox()
     agentshield_gw.reset_metrics()
@@ -207,7 +240,7 @@ def verify_audit_ledger():
 
 
 @app.post("/api/audit/tamper")
-def tamper_audit_ledger(block_index: int = 1):
+def tamper_audit_ledger(block_index: int = 1, admin: dict[str, str] = Depends(require_admin)):
     ok = merkle_ledger.simulate_tampering(block_index)
     if not ok:
         raise HTTPException(status_code=400, detail="Cannot tamper: Block index not found.")

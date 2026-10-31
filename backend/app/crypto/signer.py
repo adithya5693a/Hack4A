@@ -7,11 +7,12 @@ import os
 import hmac
 import hashlib
 import json
+import secrets
 from typing import Dict, Any, Tuple, Optional
 
-# Stable demo key if environment variable is not explicitly provided
-DEMO_HMAC_KEY = "agentshield-demo-key-not-for-production"
-DEFAULT_SECRET = os.getenv("TOOL_SIGNER_KEY", DEMO_HMAC_KEY)
+# Dynamically generated cryptographic secret for runtime security if env key not set
+_ENV_SIGNER_KEY = os.getenv("TOOL_SIGNER_KEY")
+DEFAULT_SECRET = _ENV_SIGNER_KEY if _ENV_SIGNER_KEY else secrets.token_hex(32)
 
 
 class ToolSigner:
