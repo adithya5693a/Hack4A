@@ -4,9 +4,9 @@
 export type TelemetryStatus = "ALLOWED" | "BLOCKED" | "PENDING";
 
 export interface TelemetryEvent {
-  /** Unique event identifier e.g. "evt_1048" */
+  /** Unique event identifier e.g. "evt_1048" or backend "call_id" */
   id: string;
-  /** ISO-8601 UTC timestamp */
+  /** ISO-8601 UTC timestamp or string timestamp */
   timestamp: string;
   /** Originating agent identifier e.g. "Worker-Agent-01" */
   agent_id: string;
@@ -20,6 +20,10 @@ export interface TelemetryEvent {
   status: TelemetryStatus;
   /** Optional natural-language diagnosis explaining the security reasoning */
   diagnosis?: string;
+  /** Security rule ID evaluated by the Policy Enforcement Point (e.g. R-TAINT-01) */
+  rule_id?: string;
+  /** Underlying event type (e.g. approval_required, allowed, blocked) */
+  event_type?: string;
 }
 
 export type ApprovalDecision = "APPROVE" | "REJECT";

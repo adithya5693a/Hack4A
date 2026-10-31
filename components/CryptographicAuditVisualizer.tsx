@@ -7,10 +7,9 @@ import {
   Link2Off,
   CheckCircle2,
   AlertTriangle,
-  ArrowRight,
-  Clock,
   Layers,
   RefreshCw,
+  RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -22,40 +21,48 @@ export default function CryptographicAuditVisualizer() {
     verificationResult,
     toggleTampering,
     verifyIntegrity,
+    resetLedger,
   } = useAuditChain();
 
   const handleVerifyClick = async () => {
     const res = await verifyIntegrity();
     if (res.valid) {
       toast.success("Log Integrity Verified", {
-        description: "All 5 mathematical activity records match cryptographically.",
+        description: res.message || "All cryptographic activity records match mathematically.",
         icon: <CheckCircle2 className="h-4 w-4 text-emerald-400" />,
       });
     } else {
       toast.error("Tamper Alert Detected", {
-        description: "Log entry #2 was secretly modified! Hash chain broken.",
+        description: res.message || `Hash mismatch detected at block #${res.broken_index}!`,
         icon: <AlertTriangle className="h-4 w-4 text-crimson" />,
       });
     }
   };
 
-  const handleToggleTampering = () => {
-    toggleTampering();
+  const handleToggleTampering = async () => {
+    await toggleTampering();
     if (!isTampered) {
-      toast.error("Log Tampering Simulated", {
-        description: "Log entry #2 was secretly modified! Hash chain broken.",
+      toast.error("Log Tampering Injected", {
+        description: "Block #1 payload modified on PEP. Hash chain broken.",
         icon: <Link2Off className="h-4 w-4 text-crimson" />,
       });
     } else {
       toast.success("Log Integrity Restored", {
-        description: "Original mathematical signature reinstated. Log verified.",
+        description: "Audit ledger restored to valid cryptographic state.",
         icon: <ShieldCheck className="h-4 w-4 text-emerald-400" />,
       });
     }
   };
 
+  const handleResetLedger = async () => {
+    await resetLedger();
+    toast.success("Ledger Reset to Genesis", {
+      description: "Audit chain, outbox, and PEP metrics cleared.",
+    });
+  };
+
   const truncateHash = (hash: string) => {
-    if (!hash || hash.length <= 16) return hash;
+    if (!hash || hash.length <= 16) return hash || "0x0";
     return `${hash.slice(0, 8)}...${hash.slice(-6)}`;
   };
 
@@ -95,7 +102,7 @@ export default function CryptographicAuditVisualizer() {
                 Tamper-Proof Activity Log
               </h3>
               <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-forest text-emerald-400 border border-emerald-900/60 uppercase">
-                TAMPER CHECK
+                SHA-256 HASH CHAIN
               </span>
             </div>
             <p className="text-[10px] text-neutral-400 mt-0.5">
@@ -104,7 +111,7 @@ export default function CryptographicAuditVisualizer() {
           </div>
         </div>
 
-        {/* Dual Interactive Controls */}
+        {/* Interactive Controls */}
         <div className="flex flex-wrap items-center gap-2.5">
           {/* Button 1: [Verify Log Integrity] */}
           <button
@@ -149,6 +156,15 @@ export default function CryptographicAuditVisualizer() {
               <div className="w-8 h-4 bg-neutral-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-crimson shadow-[inset_0_1px_3px_rgba(0,0,0,0.5)]" />
             </div>
           </label>
+
+          {/* Reset button */}
+          <button
+            onClick={handleResetLedger}
+            title="Reset ledger to Genesis"
+            className="p-1.5 rounded-lg bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-neutral-200 hover:border-neutral-700 cursor-pointer transition-colors"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+          </button>
         </div>
       </div>
 
@@ -158,7 +174,7 @@ export default function CryptographicAuditVisualizer() {
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-crimson flex-shrink-0 animate-pulse" />
             <span className="font-bold tracking-wide uppercase text-white">
-              TAMPER DETECTED: Log entry #2 was secretly modified! Hash chain broken.
+              {verificationResult.message || "TAMPER DETECTED: Hash chain broken at Block #01!"}
             </span>
           </div>
           <span className="text-[10px] bg-crimson px-2.5 py-0.5 rounded text-white font-bold tracking-wider uppercase shadow-[0_0_8px_rgba(163,28,24,0.6)]">
@@ -170,11 +186,11 @@ export default function CryptographicAuditVisualizer() {
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 flex-shrink-0" />
             <span className="font-semibold tracking-wide text-neutral-200">
-              Log Integrity Verified: All 5 Entries Mathematically Intact
+              {verificationResult.message || `Log Integrity Verified: All ${blocks.length} Entries Mathematically Intact`}
             </span>
           </div>
           <span className="text-[10px] text-emerald-500 font-mono">
-            Zero Unauthorized Modifications
+            Total Blocks: {blocks.length}
           </span>
         </div>
       )}
@@ -182,123 +198,97 @@ export default function CryptographicAuditVisualizer() {
       {/* Horizontally Scrollable Hash-Chain Sequence */}
       <div className="overflow-x-auto pb-2 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-neutral-800">
         <div className="flex items-center gap-2 min-w-max py-1">
-          {blocks.map((block, idx) => {
-            const isBlockTampered = block.tampered;
-            const isInvalidFromHere = block.invalid_from_here;
-            const isLast = idx === blocks.length - 1;
+          {blocks.length === 0 ? (
+            <div className="p-4 text-xs text-neutral-500 font-mono">
+              Waiting for ledger blocks...
+            </div>
+          ) : (
+            blocks.map((block) => {
+              const isBlockTampered = block.tampered;
+              const isInvalidFromHere = block.invalid_from_here;
+              const isAllow = block.decision === "ALLOW";
 
-            return (
-              <div key={block.block_id} className="flex items-center">
-                {/* Block Card */}
-                <div
-                  className={`w-64 rounded-xl p-3 border font-mono transition-all duration-150 relative ${
-                    isBlockTampered
-                      ? "bg-charcoal border-2 border-crimson shadow-[0_0_25px_rgba(163,28,24,0.4)]"
-                      : isInvalidFromHere
-                      ? "bg-charcoal border border-crimson/70 shadow-[0_0_15px_rgba(163,28,24,0.25)]"
-                      : "bg-charcoal border border-forest hover:border-emerald-900/80 shadow-[0_0_15px_rgba(6,17,12,0.8)]"
-                  }`}
-                >
-                  {/* Top: Block ID & Timestamp */}
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-1.5">
-                      <span
-                        className={`text-xs font-bold px-1.5 py-0.5 rounded ${
-                          isBlockTampered || isInvalidFromHere
-                            ? "bg-crimson text-white"
-                            : "bg-forest border border-emerald-900/60 text-emerald-400"
-                        }`}
-                      >
-                        {block.block_id}
-                      </span>
-                      <span className="text-[10px] text-neutral-400">
-                        {block.agent_id}
-                      </span>
+              return (
+                <div key={block.block_id + block.call_id} className="flex items-center">
+                  {/* Block Card */}
+                  <div
+                    className={`w-64 rounded-xl p-3 border font-mono transition-all duration-150 relative ${
+                      isBlockTampered
+                        ? "bg-charcoal border-2 border-crimson shadow-[0_0_25px_rgba(163,28,24,0.4)]"
+                        : isInvalidFromHere
+                        ? "bg-charcoal border border-crimson/70 shadow-[0_0_15px_rgba(163,28,24,0.25)]"
+                        : "bg-charcoal border border-forest hover:border-emerald-900/80 shadow-[0_0_15px_rgba(6,17,12,0.8)]"
+                    }`}
+                  >
+                    {/* Top: Block ID & Timestamp */}
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className={`text-xs font-bold px-1.5 py-0.5 rounded ${
+                            isBlockTampered || isInvalidFromHere
+                              ? "bg-crimson text-white"
+                              : "bg-forest border border-emerald-900/60 text-emerald-400"
+                          }`}
+                        >
+                          {block.block_id}
+                        </span>
+                        <span className="text-[10px] text-neutral-400 truncate max-w-[100px]">
+                          {block.agent_id}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1 text-[10px] text-neutral-400">
+                        <span
+                          className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${
+                            isAllow
+                              ? "bg-forest text-emerald-400 border border-emerald-900/60"
+                              : "bg-crimson text-white"
+                          }`}
+                        >
+                          {block.decision}
+                        </span>
+                      </div>
                     </div>
 
-                    <div className="flex items-center gap-1 text-[10px] text-neutral-500">
-                      <Clock className="h-2.5 w-2.5" />
-                      <span>{block.timestamp}</span>
+                    {/* Action & Rule */}
+                    <div className="mb-2">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="font-bold text-neutral-200 truncate">
+                          {block.tool_name}
+                        </span>
+                        <span className="text-[10px] text-neutral-400">
+                          {block.rule_id}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-neutral-400 mt-0.5 truncate" title={block.args_preview}>
+                        {block.args_preview}
+                      </p>
+                    </div>
+
+                    {/* Hashes: Prev & Current */}
+                    <div className="pt-2 border-t border-neutral-800 space-y-1 text-[10px]">
+                      <div className="flex items-center justify-between">
+                        <span className="text-neutral-500">Previous Link:</span>
+                        <span className="text-neutral-400 font-mono">
+                          {truncateHash(block.prev_hash)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-neutral-500">Block Hash:</span>
+                        <span
+                          className={`font-mono font-semibold ${
+                            isBlockTampered ? "text-crimson font-bold" : "text-neutral-300"
+                          }`}
+                        >
+                          {truncateHash(block.current_hash)}
+                        </span>
+                      </div>
                     </div>
                   </div>
-
-                  {/* Logged Action Preview */}
-                  <div className="mb-2.5">
-                    <span className="text-[9px] uppercase tracking-wider text-neutral-400 block">
-                      Logged Agent Action
-                    </span>
-                    <p
-                      className={`text-xs font-semibold truncate ${
-                        isBlockTampered || isInvalidFromHere
-                          ? "text-red-200"
-                          : "text-neutral-200"
-                      }`}
-                      title={block.action}
-                    >
-                      {block.action}
-                    </p>
-                  </div>
-
-                  {/* Hash Signatures Box */}
-                  <div className="space-y-1 p-2 rounded bg-neutral-950/90 border border-neutral-800 text-[10px]">
-                    <div className="flex items-center justify-between text-neutral-500">
-                      <span>Previous Link:</span>
-                      <span className="font-mono text-[9px] text-zinc-500">
-                        {truncateHash(block.prev_hash)}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-neutral-500">Block Hash:</span>
-                      <span
-                        className={`font-mono text-[9px] ${
-                          isBlockTampered
-                            ? "text-crimson font-bold animate-pulse"
-                            : isInvalidFromHere
-                            ? "text-red-300"
-                            : "text-zinc-500 font-medium"
-                        }`}
-                      >
-                        {truncateHash(block.current_hash)}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Tampered Indicator Tag */}
-                  {isBlockTampered && (
-                    <div className="mt-2 text-center text-[9px] font-bold text-white bg-crimson/30 py-0.5 rounded border border-crimson/60 uppercase tracking-wider">
-                      SECRETLY MODIFIED
-                    </div>
-                  )}
-                  {!isBlockTampered && isInvalidFromHere && (
-                    <div className="mt-2 text-center text-[9px] font-semibold text-red-300/90 bg-crimson/10 py-0.5 rounded border border-crimson/30 uppercase tracking-wider">
-                      BROKEN CHAIN LINK
-                    </div>
-                  )}
                 </div>
-
-                {/* Connecting Line / Arrow between consecutive blocks */}
-                {!isLast && (
-                  <div className="flex items-center px-1">
-                    <div
-                      className={`h-0.5 w-6 transition-colors duration-150 ${
-                        blocks[idx + 1].invalid_from_here
-                          ? "bg-crimson shadow-[0_0_8px_rgba(163,28,24,0.6)]"
-                          : "bg-forest border-b border-emerald-900/60"
-                      }`}
-                    />
-                    <ArrowRight
-                      className={`h-3 w-3 -ml-1 flex-shrink-0 transition-colors duration-150 ${
-                        blocks[idx + 1].invalid_from_here
-                          ? "text-crimson"
-                          : "text-emerald-600/70"
-                      }`}
-                    />
-                  </div>
-                )}
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
       </div>
     </div>

@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import type { TelemetryEvent, TelemetryStatus } from "@/types/telemetry";
+import { adaptBackendToTelemetry } from "@/lib/telemetry-adapter";
+import { getWsUrl } from "@/lib/api-config";
 
-const WS_URL = "ws://localhost:8000/ws/security-stream";
 const MAX_BUFFER = 250;
 const RECONNECT_INTERVAL_MS = 3500;
-const MOCK_INTERVAL_MS = 2000;
+const MOCK_INTERVAL_MS = 2500;
 
-// Realistic synthetic dataset pool for mock generation
+// Synthetic fallback dataset (ONLY used when user manually toggles mockMode on)
 const MOCK_AGENTS = [
   "Worker-Agent-01",
   "Scout-Agent-09",
@@ -24,12 +25,9 @@ interface MockScenario {
   risk_score: number;
   status: TelemetryStatus;
   diagnosis: string;
+  rule_id: string;
 }
 
-// Scenarios strictly aligned with our 3-Tier Permission Architecture:
-// Tier 1: 0% - 39% Risk (ALLOWED - Safe / Automated)
-// Tier 2: 40% - 69% Risk (INSPECTED - Sensitive Read)
-// Tier 3: 70% - 100% Risk (PENDING - Human-in-the-Loop Review)
 const MOCK_SCENARIOS: MockScenario[] = [
   {
     tool_name: "execute_bash",
@@ -37,69 +35,39 @@ const MOCK_SCENARIOS: MockScenario[] = [
     risk_score: 96,
     status: "PENDING",
     diagnosis: "Indirect prompt injection detected: Tainted context instruction attempting filesystem destruction",
+    rule_id: "R-TAINT-01",
   },
   {
-    tool_name: "sql_query",
+    tool_name: "query_database",
     argsGenerator: () => JSON.stringify({ query: "SELECT * FROM soc_credentials WHERE role='admin' --" }),
     risk_score: 91,
     status: "PENDING",
     diagnosis: "Malicious SQL injection signature: attempting credential exfiltration from privileged table",
+    rule_id: "R-RBAC-01",
   },
   {
-    tool_name: "execute_bash",
-    argsGenerator: () => JSON.stringify({ command: "iptables -F && systemctl stop ufw" }),
-    risk_score: 84,
-    status: "PENDING",
-    diagnosis: "Perimeter firewall rule tampering detected; security modification pending human approval",
-  },
-  {
-    tool_name: "read_file",
-    argsGenerator: () => JSON.stringify({ path: "/etc/shadow" }),
+    tool_name: "read_document",
+    argsGenerator: () => JSON.stringify({ filename: "/etc/shadow" }),
     risk_score: 79,
     status: "PENDING",
     diagnosis: "Sensitive credential store access requested; requires SOC manual sign-off",
+    rule_id: "R-SENSITIVE-01",
   },
   {
-    tool_name: "read_file",
-    argsGenerator: () => JSON.stringify({ path: "/etc/nginx/nginx.conf" }),
-    risk_score: 48,
-    status: "ALLOWED",
-    diagnosis: "Inspected: Configuration read within verified server inspection boundary",
-  },
-  {
-    tool_name: "http_request",
-    argsGenerator: () => JSON.stringify({ url: "http://internal-telemetry:9090/metrics", method: "GET" }),
-    risk_score: 45,
-    status: "ALLOWED",
-    diagnosis: "Inspected: Internal metrics scrape authorized under automated inspection rule",
-  },
-  {
-    tool_name: "read_file",
-    argsGenerator: () => JSON.stringify({ path: "/var/log/audit.log" }),
+    tool_name: "read_document",
+    argsGenerator: () => JSON.stringify({ filename: "invoice_90214.pdf" }),
     risk_score: 12,
     status: "ALLOWED",
-    diagnosis: "Whitelisted security audit log ingestion by authorized analysis agent",
+    diagnosis: "Whitelisted document retrieval under inspection policy",
+    rule_id: "R-ALLOW-01",
   },
   {
-    tool_name: "web_search",
-    argsGenerator: () => JSON.stringify({ query: "CVE-2026-4418 mitigation strategies", depth: 2 }),
-    risk_score: 8,
-    status: "ALLOWED",
-    diagnosis: "Read-only threat research query executed within perimeter bounds",
-  },
-  {
-    tool_name: "http_request",
-    argsGenerator: () => JSON.stringify({ url: "https://api.github.com/repos/agentshield/core/commits", method: "GET" }),
-    risk_score: 5,
-    status: "ALLOWED",
-    diagnosis: "Verified outbound HTTPS API call to whitelisted developer domain",
-  },
-  {
-    tool_name: "list_directory",
-    argsGenerator: () => JSON.stringify({ directory: "/home/sandbox/workspace" }),
+    tool_name: "send_email",
+    argsGenerator: () => JSON.stringify({ recipient: "finance@company.test", subject: "Invoice Status" }),
     risk_score: 15,
     status: "ALLOWED",
-    diagnosis: "Standard workspace navigation inside container boundaries",
+    diagnosis: "Outbound communication authorized to enterprise domain",
+    rule_id: "R-EGRESS-01",
   },
 ];
 
@@ -108,12 +76,10 @@ let eventIdCounter = 1048;
 function createMockEvent(): TelemetryEvent {
   const scenario = MOCK_SCENARIOS[Math.floor(Math.random() * MOCK_SCENARIOS.length)];
   const agentId = MOCK_AGENTS[Math.floor(Math.random() * MOCK_AGENTS.length)];
-
-  // For the pitch demo, if it's the 96% bash command, keep it exactly 96
-  const score = scenario.risk_score === 96 ? 96 : Math.max(0, Math.min(100, scenario.risk_score + (Math.floor(Math.random() * 5) - 2)));
+  const score = scenario.risk_score;
 
   return {
-    id: `evt_${++eventIdCounter}`,
+    id: `evt_mock_${++eventIdCounter}`,
     timestamp: new Date().toISOString(),
     agent_id: agentId,
     tool_name: scenario.tool_name,
@@ -121,6 +87,7 @@ function createMockEvent(): TelemetryEvent {
     risk_score: score,
     status: scenario.status,
     diagnosis: scenario.diagnosis,
+    rule_id: scenario.rule_id,
   };
 }
 
@@ -134,7 +101,7 @@ export interface SecurityStreamStats {
 export function useSecurityStream() {
   const [events, setEvents] = useState<TelemetryEvent[]>([]);
   const [connected, setConnected] = useState<boolean>(false);
-  // Do NOT run mock automatically on website load; starts idle (false)
+  // Default mock mode is OFF (acceptance requirement: fresh load = empty, no fake events)
   const [mockMode, setMockMode] = useState<boolean>(false);
 
   const wsRef = useRef<WebSocket | null>(null);
@@ -147,12 +114,45 @@ export function useSecurityStream() {
   }, [mockMode]);
 
   const addEvent = useCallback((event: TelemetryEvent) => {
-    setEvents((prev) => [event, ...prev].slice(0, MAX_BUFFER));
+    setEvents((prev) => {
+      // If event already exists (e.g. pending -> resolved), update it
+      const existingIdx = prev.findIndex((e) => e.id === event.id);
+      if (existingIdx !== -1) {
+        const updated = [...prev];
+        updated[existingIdx] = { ...updated[existingIdx], ...event };
+        return updated;
+      }
+      return [event, ...prev].slice(0, MAX_BUFFER);
+    });
   }, []);
 
-  const updateEventStatus = useCallback((id: string, newStatus: TelemetryStatus) => {
+  const addEvents = useCallback((newEvents: TelemetryEvent[]) => {
+    if (!newEvents.length) return;
+    setEvents((prev) => {
+      let updated = [...prev];
+      for (const ev of newEvents) {
+        const existingIdx = updated.findIndex((e) => e.id === ev.id);
+        if (existingIdx !== -1) {
+          updated[existingIdx] = { ...updated[existingIdx], ...ev };
+        } else {
+          updated = [ev, ...updated];
+        }
+      }
+      return updated.slice(0, MAX_BUFFER);
+    });
+  }, []);
+
+  const updateEventStatus = useCallback((id: string, newStatus: TelemetryStatus, newDiagnosis?: string) => {
     setEvents((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, status: newStatus } : e))
+      prev.map((e) =>
+        e.id === id
+          ? {
+              ...e,
+              status: newStatus,
+              diagnosis: newDiagnosis ? `${e.diagnosis ? e.diagnosis + "; " : ""}${newDiagnosis}` : e.diagnosis,
+            }
+          : e
+      )
     );
   }, []);
 
@@ -160,43 +160,13 @@ export function useSecurityStream() {
     addEvent(event);
   }, [addEvent]);
 
-  // Manual Test Simulation Actions (Immediate dispatch without timers)
-  const simulateSafeEvent = useCallback((): TelemetryEvent => {
-    const safeEvent: TelemetryEvent = {
-      id: `evt_${++eventIdCounter}`,
-      timestamp: new Date().toISOString(),
-      agent_id: "Worker-Agent-01",
-      tool_name: "web_search",
-      args: JSON.stringify({ query: "CVE-2026-4418 mitigation strategies", depth: 2 }),
-      risk_score: 8,
-      status: "ALLOWED",
-      diagnosis: "Whitelisted threat intelligence query executed within perimeter bounds",
-    };
-    addEvent(safeEvent);
-    return safeEvent;
-  }, [addEvent]);
-
-  const simulateTier3Attack = useCallback((): TelemetryEvent => {
-    const attackEvent: TelemetryEvent = {
-      id: `evt_${++eventIdCounter}`,
-      timestamp: new Date().toISOString(),
-      agent_id: "Worker-Agent-01",
-      tool_name: "execute_bash",
-      args: JSON.stringify({ command: "rm -rf /backups" }),
-      risk_score: 96,
-      status: "PENDING",
-      diagnosis: "Indirect prompt injection detected: Tainted context instruction attempting filesystem destruction",
-    };
-    addEvent(attackEvent);
-    return attackEvent;
-  }, [addEvent]);
-
   // WebSocket Connection Logic
   const connectWebSocket = useCallback(() => {
     if (isMockActiveRef.current) return;
 
     try {
-      const ws = new WebSocket(WS_URL);
+      const wsUrl = getWsUrl();
+      const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
       ws.onopen = () => {
@@ -206,8 +176,35 @@ export function useSecurityStream() {
       ws.onmessage = (event) => {
         try {
           const parsed = JSON.parse(event.data);
-          if (parsed && parsed.id && parsed.agent_id) {
-            addEvent(parsed as TelemetryEvent);
+          if (!parsed || typeof parsed !== "object") return;
+
+          // 1. Ignore connected welcome message
+          if (parsed.event === "connected") return;
+
+          // 2. Handle ATTACK_INTERCEPTED: ingest steps into stream if present
+          if (parsed.event === "ATTACK_INTERCEPTED" && parsed.data && Array.isArray(parsed.data.steps)) {
+            const mappedSteps: TelemetryEvent[] = [];
+            for (const step of parsed.data.steps) {
+              const adapted = adaptBackendToTelemetry(step);
+              if (adapted) mappedSteps.push(adapted);
+            }
+            if (mappedSteps.length) {
+              addEvents(mappedSteps);
+            }
+            return;
+          }
+
+          // 3. Handle NEW_BLOCK: map block to telemetry row if not already present
+          if (parsed.event === "NEW_BLOCK" && parsed.block) {
+            const adapted = adaptBackendToTelemetry(parsed.block);
+            if (adapted) addEvent(adapted);
+            return;
+          }
+
+          // 4. Adapt standard PEP alerts: allowed, blocked, approval_required, approval_resolved, injection_detected
+          const adapted = adaptBackendToTelemetry(parsed);
+          if (adapted) {
+            addEvent(adapted);
           }
         } catch (e) {
           console.warn("[AgentShield WS] Received unparseable message:", e);
@@ -234,11 +231,10 @@ export function useSecurityStream() {
         }, RECONNECT_INTERVAL_MS);
       }
     }
-  }, [addEvent]);
+  }, [addEvent, addEvents]);
 
-  // Mock Stream Controller: only runs when mockMode is toggled on
+  // Mock Stream Controller: only runs when mockMode is explicitly toggled on
   const startMockStream = useCallback(() => {
-    // Generate initial pitch-demo event when user explicitly starts mock
     setEvents((prev) => (prev.length === 0 ? [createMockEvent()] : prev));
 
     if (mockIntervalRef.current) clearInterval(mockIntervalRef.current);
@@ -305,8 +301,7 @@ export function useSecurityStream() {
     clearStream,
     updateEventStatus,
     injectEvent,
-    simulateSafeEvent,
-    simulateTier3Attack,
+    addEvents,
     stats,
   };
 }

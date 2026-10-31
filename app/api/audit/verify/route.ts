@@ -1,40 +1,27 @@
 import { NextResponse } from "next/server";
-import type { AuditVerificationResponse } from "@/types/audit";
+import { BACKEND_URL } from "@/lib/api-config";
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
-    const { searchParams } = new URL(request.url);
-    const isTampered = searchParams.get("tampered") === "true";
+    const res = await fetch(`${BACKEND_URL}/api/audit/verify`, {
+      method: "GET",
+      cache: "no-store",
+    });
 
-    if (isTampered) {
-      const response: AuditVerificationResponse = {
-        valid: false,
-        total_blocks: 5,
-        tampered_block: {
-          block_number: 2,
-          block_id: "#02",
-          expected_hash: "0x7a89e1f48201cdba",
-          actual_hash: "0xdeadbeef1337c0de",
-        },
-        message: "TAMPER DETECTED: Hash mismatch at Block #02",
-        verified_at: new Date().toISOString(),
-      };
-      return NextResponse.json(response, { status: 200 });
+    if (!res.ok) {
+      const errText = await res.text();
+      return NextResponse.json(
+        { error: `Backend returned ${res.status}`, details: errText },
+        { status: res.status }
+      );
     }
 
-    const response: AuditVerificationResponse = {
-      valid: true,
-      total_blocks: 5,
-      tampered_block: null,
-      message: "Integrity Verified: Chain Valid",
-      verified_at: new Date().toISOString(),
-    };
-
-    return NextResponse.json(response, { status: 200 });
+    const data = await res.json();
+    return NextResponse.json(data, { status: 200 });
   } catch (error) {
     return NextResponse.json(
-      { error: "Verification routine failed", details: String(error) },
-      { status: 500 }
+      { error: "Failed to forward audit verify to backend", details: String(error) },
+      { status: 502 }
     );
   }
 }

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import type { ApprovalPayload, ApprovalResponse } from "@/types/telemetry";
+import { BACKEND_URL } from "@/lib/api-config";
 
 export async function POST(
   request: Request,
@@ -7,32 +7,39 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const body = (await request.json()) as ApprovalPayload;
+    const body = await request.json();
 
-    if (!body || !body.decision || !body.admin) {
+    // Map body to backend ApprovalAction schema:
+    // backend expects { action: "APPROVE" | "REJECT", reviewer: string, ... }
+    const action = body.action || body.decision;
+    const reviewer = body.reviewer || body.admin || "SOC_ADMIN_01";
+
+    const res = await fetch(`${BACKEND_URL}/api/approvals/${encodeURIComponent(id)}/action`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action,
+        decision: action,
+        reviewer,
+        call_id: id,
+        note: body.note,
+      }),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
       return NextResponse.json(
-        { error: "Invalid approval payload. Expected 'decision' and 'admin'." },
-        { status: 400 }
+        { error: `Backend returned ${res.status}`, details: errText },
+        { status: res.status }
       );
     }
 
-    const response: ApprovalResponse = {
-      success: true,
-      event_id: id,
-      decision: body.decision,
-      admin: body.admin,
-      timestamp: new Date().toISOString(),
-      message:
-        body.decision === "APPROVE"
-          ? `Authorization granted one-time by ${body.admin}`
-          : `Execution blocked & agent quarantined by ${body.admin}`,
-    };
-
-    return NextResponse.json(response, { status: 200 });
+    const data = await res.json();
+    return NextResponse.json(data, { status: 200 });
   } catch (error) {
     return NextResponse.json(
-      { error: "Failed to process approval action", details: String(error) },
-      { status: 500 }
+      { error: "Failed to forward approval action to backend", details: String(error) },
+      { status: 502 }
     );
   }
 }

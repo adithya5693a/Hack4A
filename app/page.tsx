@@ -11,6 +11,8 @@ import LiveTelemetryStream from "@/components/LiveTelemetryStream";
 import HITLApprovalModal from "@/components/HITLApprovalModal";
 import { useSecurityStream } from "@/hooks/useSecurityStream";
 import type { TelemetryEvent, ApprovalDecision } from "@/types/telemetry";
+import { adaptBackendToTelemetry } from "@/lib/telemetry-adapter";
+import { BACKEND_URL } from "@/lib/api-config";
 import { toast } from "sonner";
 import {
   ShieldCheck,
@@ -21,6 +23,7 @@ import {
   Lock,
   CheckCircle,
   AlertTriangle,
+  WifiOff,
 } from "lucide-react";
 
 export default function SOCDashboardPage() {
@@ -32,8 +35,7 @@ export default function SOCDashboardPage() {
     clearStream,
     updateEventStatus,
     injectEvent,
-    simulateSafeEvent,
-    simulateTier3Attack,
+    addEvents,
     stats,
   } = useSecurityStream();
 
@@ -44,29 +46,19 @@ export default function SOCDashboardPage() {
 
   // Keep track of events already auto-prompted so we don't bombard the user repeatedly
   const autoPromptedIdsRef = useRef<Set<string>>(new Set());
-  // Prevent any auto-popup on initial website mount
-  const hasUserStartedStreamRef = useRef<boolean>(false);
 
-  useEffect(() => {
-    if (mockMode || connected) {
-      hasUserStartedStreamRef.current = true;
-    }
-  }, [mockMode, connected]);
-
-  // Trigger Condition:
-  // Only trigger automatically during an active stream, NEVER on initial page load
+  // Acceptance Criterion: Open modal ONLY on PENDING / approval_required events.
+  // NEVER open because risk_score > 70 on an already-ALLOWED row.
   useEffect(() => {
     if (isModalOpen) return;
-    if (!hasUserStartedStreamRef.current) return;
 
-    const highRiskOrPending = events.find((evt) => {
-      const isUrgent = evt.status === "PENDING" || evt.risk_score > 70;
-      return isUrgent && !autoPromptedIdsRef.current.has(evt.id);
+    const pendingEvent = events.find((evt) => {
+      return evt.status === "PENDING" && !autoPromptedIdsRef.current.has(evt.id);
     });
 
-    if (highRiskOrPending) {
-      autoPromptedIdsRef.current.add(highRiskOrPending.id);
-      setActiveModalEvent(highRiskOrPending);
+    if (pendingEvent) {
+      autoPromptedIdsRef.current.add(pendingEvent.id);
+      setActiveModalEvent(pendingEvent);
       setIsModalOpen(true);
     }
   }, [events, isModalOpen]);
@@ -74,45 +66,58 @@ export default function SOCDashboardPage() {
   // Queue of remaining unhandled PENDING events
   const pendingQueue = events.filter((e) => e.status === "PENDING");
 
-  // Dual CTAs Action Handler
+  // HITL Action Handler: Calls FastAPI backend directly
   const handleApprovalAction = async (
     event: TelemetryEvent,
     decision: ApprovalDecision
   ) => {
     const isApprove = decision === "APPROVE";
-    const newStatus = isApprove ? "ALLOWED" : "BLOCKED";
 
     try {
-      const response = await fetch(`/api/approvals/${event.id}/action`, {
+      const response = await fetch(`${BACKEND_URL}/api/approvals/${encodeURIComponent(event.id)}/action`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          action: decision,
           decision,
-          admin: "SOC_ADMIN_01",
+          reviewer: "SOC_ADMIN_01",
+          call_id: event.id,
         }),
       });
 
       if (!response.ok) {
-        console.warn("[HITL] API returned non-200, applying optimistic local state.");
+        const errDetail = await response.text();
+        toast.error("Failed to resolve approval on PEP", {
+          description: `Backend returned ${response.status}: ${errDetail}`,
+        });
+        return;
       }
-    } catch (err) {
-      console.warn("[HITL] API network error, applying optimistic state:", err);
-    }
 
-    updateEventStatus(event.id, newStatus);
-    setIsModalOpen(false);
+      // Backend confirmed resolution
+      const newStatus = isApprove ? "ALLOWED" : "BLOCKED";
+      const outcomeDiag = isApprove
+        ? "Human approval granted by SOC_ADMIN_01"
+        : "Human approval rejected by SOC_ADMIN_01";
 
-    if (isApprove) {
-      toast.success("Execution Allowed Once", {
-        description: `${event.agent_id} [${event.tool_name}] approved by security operator.`,
-        icon: <ShieldCheck className="h-4 w-4 text-emerald-400" />,
-      });
-    } else {
-      toast.error("Execution Blocked & Protected", {
-        description: `${event.agent_id} [${event.tool_name}] intercepted & isolated.`,
-        icon: <ShieldAlert className="h-4 w-4 text-crimson" />,
+      updateEventStatus(event.id, newStatus, outcomeDiag);
+      setIsModalOpen(false);
+
+      if (isApprove) {
+        toast.success("Execution Allowed Once", {
+          description: `${event.agent_id} [${event.tool_name}] approved by security operator.`,
+          icon: <ShieldCheck className="h-4 w-4 text-emerald-400" />,
+        });
+      } else {
+        toast.error("Execution Blocked & Protected", {
+          description: `${event.agent_id} [${event.tool_name}] intercepted & isolated.`,
+          icon: <ShieldAlert className="h-4 w-4 text-crimson" />,
+        });
+      }
+    } catch (err: any) {
+      toast.error("Backend Unreachable", {
+        description: `Could not send approval action to PEP: ${err.message || String(err)}`,
       });
     }
   };
@@ -122,32 +127,62 @@ export default function SOCDashboardPage() {
     setIsModalOpen(true);
   };
 
-  // Manual Sandbox Simulators
-  const handleSimulateSafe = () => {
-    const safe = simulateSafeEvent();
-    toast.success("Safe Activity Logged", {
-      description: `${safe.agent_id} → ${safe.tool_name} (${safe.risk_score}% threat ALLOWED)`,
-      icon: <CheckCircle className="h-4 w-4 text-emerald-400" />,
-    });
+  // Manual Sandbox Simulators — Real backend calls, NO fake events when backend is down
+  const handleSimulateSafe = async () => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/attacks/legitimate_approval?shield_enabled=true&auto_resolve=approve`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      if (Array.isArray(data.steps)) {
+        const mapped = data.steps.map((s: any) => adaptBackendToTelemetry({ ...s, timestamp: new Date().toISOString() })).filter(Boolean) as TelemetryEvent[];
+        addEvents(mapped);
+      }
+      toast.success("Safe Activity Verified", {
+        description: "Legitimate agent task executed and audited under inspection policy.",
+        icon: <CheckCircle className="h-4 w-4 text-emerald-400" />,
+      });
+    } catch (err: any) {
+      toast.error("Backend Offline", {
+        description: `Could not reach ${BACKEND_URL}. Run FastAPI backend to test.`,
+        icon: <WifiOff className="h-4 w-4 text-crimson" />,
+      });
+    }
   };
 
-  const handleSimulateAttack = () => {
-    const attack = simulateTier3Attack();
-    autoPromptedIdsRef.current.add(attack.id);
-    setActiveModalEvent(attack);
-    setIsModalOpen(true);
-    toast.warning("Dangerous Threat Detected", {
-      description: `${attack.agent_id} attempted ${attack.tool_name} (${attack.risk_score}% CRITICAL). Human confirmation required.`,
-      icon: <AlertTriangle className="h-4 w-4 text-crimson" />,
-    });
+  const handleSimulateAttack = async () => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/attacks/poisoned_invoice?shield_enabled=true`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      if (Array.isArray(data.steps)) {
+        const mapped = data.steps.map((s: any) => adaptBackendToTelemetry({ ...s, timestamp: new Date().toISOString() })).filter(Boolean) as TelemetryEvent[];
+        addEvents(mapped);
+      }
+      toast.warning("Dangerous Threat Detected", {
+        description: "Poisoned invoice attack intercepted by Taint Guard (R-TAINT-01).",
+        icon: <AlertTriangle className="h-4 w-4 text-crimson" />,
+      });
+    } catch (err: any) {
+      toast.error("Backend Offline", {
+        description: `Could not reach ${BACKEND_URL}. Run FastAPI backend to test.`,
+        icon: <WifiOff className="h-4 w-4 text-crimson" />,
+      });
+    }
   };
 
-  // Judges' 1-Click Attack Simulator Dispatcher
-  const handlePlaygroundAttack = (event: TelemetryEvent) => {
-    injectEvent(event);
-    autoPromptedIdsRef.current.add(event.id);
-    setActiveModalEvent(event);
-    setIsModalOpen(true);
+  // Attack Simulator Dispatcher: ingest mapped steps into stream
+  const handlePlaygroundAttack = (dispatchedEvents: TelemetryEvent[]) => {
+    addEvents(dispatchedEvents);
   };
 
   return (
@@ -235,7 +270,7 @@ export default function SOCDashboardPage() {
                 )}
               </div>
               <p className="text-[11px] text-neutral-400 leading-relaxed mb-3">
-                Holds dangerous commands (&gt; 70% risk) until approved by a human.
+                Holds high-impact commands until approved by an authenticated security administrator.
               </p>
 
               {pendingQueue.length > 0 ? (
@@ -261,7 +296,7 @@ export default function SOCDashboardPage() {
               )}
             </div>
 
-            {/* 5. Security Engine Status (Exact User Requirement) */}
+            {/* 5. Security Engine Status (Job 5 Requirement: Reflects Live Backend Connection) */}
             <div className="bg-charcoal border border-forest rounded-xl p-4 shadow-[0_0_20px_rgba(6,17,12,0.8)]">
               <div className="flex items-center gap-2 text-xs font-bold text-neutral-200 uppercase tracking-wider mb-3">
                 <Cpu className="h-4 w-4 text-emerald-400" />
@@ -271,44 +306,82 @@ export default function SOCDashboardPage() {
                 {/* Command Interceptor */}
                 <div className="flex justify-between items-center py-1 border-b border-neutral-800">
                   <span className="text-neutral-400">Command Interceptor</span>
-                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-semibold bg-forest border border-emerald-900/60 text-emerald-400">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-glow-pulse" />
-                    Active
+                  <span
+                    className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-semibold ${
+                      connected
+                        ? "bg-forest border border-emerald-900/60 text-emerald-400"
+                        : "bg-neutral-900 border border-neutral-800 text-neutral-500"
+                    }`}
+                  >
+                    <span
+                      className={`h-1.5 w-1.5 rounded-full ${
+                        connected ? "bg-emerald-400 animate-glow-pulse" : "bg-neutral-600"
+                      }`}
+                    />
+                    {connected ? "Active" : "Offline"}
                   </span>
                 </div>
 
                 {/* Permission Rules */}
                 <div className="flex justify-between items-center py-1 border-b border-neutral-800">
                   <span className="text-neutral-400">Permission Rules</span>
-                  <span className="text-[11px] text-emerald-400 font-semibold text-right">
-                    3 Tiers Active
+                  <span
+                    className={`text-[11px] font-semibold text-right ${
+                      connected ? "text-emerald-400" : "text-neutral-500"
+                    }`}
+                  >
+                    {connected ? "3 Tiers Active" : "Offline"}
                   </span>
                 </div>
 
                 {/* Human Safety Gate */}
                 <div className="flex justify-between items-center py-1 border-b border-neutral-800">
                   <span className="text-neutral-400">Human Safety Gate</span>
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-crimson/20 border border-crimson/50 text-red-300">
-                    Armed (&gt;70% Risk)
+                  <span
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold ${
+                      connected
+                        ? "bg-crimson/20 border border-crimson/50 text-red-300"
+                        : "bg-neutral-900 border border-neutral-800 text-neutral-500"
+                    }`}
+                  >
+                    {connected ? "Armed (>70% Risk)" : "Offline"}
                   </span>
                 </div>
 
                 {/* Injection Scanner */}
                 <div className="flex justify-between items-center py-1 border-b border-neutral-800">
                   <span className="text-neutral-400">Injection Scanner</span>
-                  <span className="text-emerald-400 font-semibold">Active</span>
+                  <span
+                    className={`font-semibold ${
+                      connected ? "text-emerald-400" : "text-neutral-500"
+                    }`}
+                  >
+                    {connected ? "Active" : "Offline"}
+                  </span>
                 </div>
 
                 {/* Tool Authenticity */}
                 <div className="flex justify-between items-center py-1 border-b border-neutral-800">
                   <span className="text-neutral-400">Tool Authenticity</span>
-                  <span className="text-emerald-400 font-semibold">Verified</span>
+                  <span
+                    className={`font-semibold ${
+                      connected ? "text-emerald-400" : "text-neutral-500"
+                    }`}
+                  >
+                    {connected ? "Verified (HMAC-SHA256)" : "Offline"}
+                  </span>
                 </div>
 
                 {/* Tamper-Proof Audit Log */}
                 <div className="flex justify-between items-center py-1">
                   <span className="text-neutral-400">Tamper-Proof Audit Log</span>
-                  <span className="text-emerald-400 font-semibold">Synchronized</span>
+                  <span
+                    className={`font-semibold ${
+                      connected ? "text-emerald-400" : "text-neutral-500"
+                    }`}
+                  >
+                    {connected ? "Synchronized" : "Offline"}
+                  </span>
                 </div>
               </div>
             </div>
@@ -333,7 +406,7 @@ export default function SOCDashboardPage() {
                     </span>
                   </div>
                   <p className="text-[10px] text-red-300/90 leading-tight">
-                    Human-in-the-Loop Review (Demo Pitch: 96% injection attack quarantines for manual approval)
+                    Human-in-the-Loop Review (Critical commands quarantined for manual confirmation)
                   </p>
                 </div>
 
@@ -381,10 +454,10 @@ export default function SOCDashboardPage() {
                 <span className="text-neutral-500">Live Status:</span>
                 <span
                   className={`font-semibold ${
-                    mockMode ? "text-amber-400" : connected ? "text-emerald-400" : "text-neutral-400"
+                    mockMode ? "text-amber-400" : connected ? "text-emerald-400" : "text-neutral-500"
                   }`}
                 >
-                  {mockMode ? "Simulation Active" : connected ? "Firewall Online" : "Standby (Ready)"}
+                  {mockMode ? "Simulation Active" : connected ? "Firewall Online" : "Offline"}
                 </span>
               </div>
             </div>
@@ -392,7 +465,7 @@ export default function SOCDashboardPage() {
         </div>
       </main>
 
-      {/* Reduced-Size HITL Approval Modal Dialog */}
+      {/* HITL Approval Modal Dialog */}
       <HITLApprovalModal
         event={activeModalEvent}
         isOpen={isModalOpen}
@@ -403,20 +476,24 @@ export default function SOCDashboardPage() {
         onSignIn={() => setIsAuthenticated(true)}
       />
 
-      {/* SOC Bottom Status Bar */}
+      {/* SOC Bottom Status Bar (Honest Chrome: SHA-256 hash-chained audit log) */}
       <footer className="border-t border-forest bg-charcoal/90 px-6 py-2.5 flex flex-wrap items-center justify-between text-xs text-neutral-400 font-mono">
         <div className="flex items-center gap-3">
           <span className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-glow-pulse" />
-            <span className="text-neutral-200">AgentShield AI Firewall</span>
+            <span
+              className={`h-2 w-2 rounded-full ${
+                connected ? "bg-emerald-500 animate-glow-pulse" : "bg-neutral-600"
+              }`}
+            />
+            <span className="text-neutral-200">AgentShield PEP</span>
           </span>
           <span className="text-neutral-700">|</span>
           <span className="text-[11px] text-neutral-400">
-            Strict 3-Color SOC Palette (#171717 Charcoal Black / #06110C Forest Green / #A31C18 Crimson Red)
+            SHA-256 hash-chained audit log with HMAC-SHA256 tool manifest signatures
           </span>
         </div>
         <div className="text-[11px] text-neutral-400">
-          Firewall Node: <span className="text-neutral-200">AS-PRIMARY-01</span>
+          Gateway: <span className="text-neutral-200">{BACKEND_URL}</span>
         </div>
       </footer>
     </div>

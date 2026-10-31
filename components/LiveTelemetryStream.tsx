@@ -10,6 +10,7 @@ import {
   Search,
   Lock,
   AlertTriangle,
+  Layers,
 } from "lucide-react";
 import type { TelemetryEvent, TelemetryStatus } from "@/types/telemetry";
 import { summariseArgs } from "@/types/telemetry";
@@ -63,6 +64,7 @@ export default function LiveTelemetryStream({
         evt.agent_id.toLowerCase().includes(q) ||
         evt.tool_name.toLowerCase().includes(q) ||
         evt.args.toLowerCase().includes(q) ||
+        (evt.rule_id && evt.rule_id.toLowerCase().includes(q)) ||
         (evt.diagnosis && evt.diagnosis.toLowerCase().includes(q))
       );
     }
@@ -71,6 +73,14 @@ export default function LiveTelemetryStream({
 
   return (
     <div className="flex flex-col h-full bg-charcoal rounded-xl border border-forest shadow-[0_0_25px_rgba(6,17,12,0.9)] overflow-hidden font-mono">
+      {/* Labeled Synthetic Feed Warning when mock mode is manually toggled on */}
+      {mockMode && (
+        <div className="bg-crimson px-4 py-1.5 text-center text-xs font-bold uppercase tracking-widest text-white shadow-[0_0_15px_rgba(163,28,24,0.5)] flex items-center justify-center gap-2">
+          <AlertTriangle className="h-4 w-4 text-white" />
+          <span>SYNTHETIC FEED — not the PEP</span>
+        </div>
+      )}
+
       {/* Stream Header & Controls */}
       <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-neutral-800/80 bg-neutral-900/60">
         <div className="flex items-center gap-2.5">
@@ -98,7 +108,7 @@ export default function LiveTelemetryStream({
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-500" />
             <input
               type="text"
-              placeholder="Search agent, tool, command..."
+              placeholder="Search agent, tool, rule..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-40 sm:w-56 pl-8 pr-2.5 py-1 text-xs bg-neutral-950/70 border border-neutral-800 rounded-lg text-neutral-200 placeholder:text-neutral-500 focus:outline-none focus:border-crimson transition-colors duration-100"
@@ -107,42 +117,28 @@ export default function LiveTelemetryStream({
 
           {/* Filter Pills */}
           <div className="flex items-center rounded-lg bg-neutral-950/70 p-0.5 border border-neutral-800">
-            {(
-              [
-                { id: "ALL", label: "ALL" },
-                { id: "BLOCKED", label: "BLOCKED" },
-                { id: "ALLOWED", label: "ALLOWED" },
-                { id: "PENDING", label: "NEEDS APPROVAL" },
-              ] as const
-            ).map((filter) => (
+            {(["ALL", "ALLOWED", "BLOCKED", "PENDING"] as const).map((status) => (
               <button
-                key={filter.id}
-                onClick={() => setStatusFilter(filter.id)}
-                className={`px-2 py-0.5 text-[10px] font-medium rounded-md active:scale-[0.97] transition-all duration-100 ease-out cursor-pointer ${
-                  statusFilter === filter.id
-                    ? filter.id === "BLOCKED"
-                      ? "bg-crimson text-white font-bold shadow-[0_0_8px_rgba(163,28,24,0.4)]"
-                      : filter.id === "ALLOWED"
-                      ? "bg-forest border border-emerald-900/80 text-emerald-300 font-bold"
-                      : filter.id === "PENDING"
-                      ? "bg-neutral-800 text-amber-300 font-bold"
-                      : "bg-neutral-800 text-neutral-100 font-bold"
+                key={status}
+                onClick={() => setStatusFilter(status)}
+                className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all duration-100 cursor-pointer ${
+                  statusFilter === status
+                    ? "bg-forest text-emerald-400 border border-emerald-900/60 font-semibold shadow-[0_0_8px_rgba(6,17,12,0.8)]"
                     : "text-neutral-400 hover:text-neutral-200"
                 }`}
               >
-                {filter.label}
+                {status}
               </button>
             ))}
           </div>
 
-          {/* Clear stream button */}
+          {/* Clear Button */}
           <button
             onClick={onClear}
-            className="flex items-center gap-1 px-2.5 py-1 text-xs text-neutral-400 bg-neutral-950/70 border border-neutral-800 hover:border-crimson/50 hover:text-red-300 rounded-lg active:scale-[0.97] transition-all duration-100 ease-out cursor-pointer"
-            title="Clear Feed Buffer"
+            className="p-1.5 rounded-lg border border-neutral-800 text-neutral-400 hover:text-red-300 hover:border-crimson/50 hover:bg-crimson/10 active:scale-[0.97] transition-all duration-100 ease-out cursor-pointer"
+            title="Clear Feed History"
           >
-            <Trash2 className="h-3 w-3" />
-            <span className="hidden sm:inline">Clear</span>
+            <Trash2 className="h-3.5 w-3.5" />
           </button>
         </div>
       </div>
@@ -184,9 +180,12 @@ export default function LiveTelemetryStream({
             const isSelected = selectedEventId === event.id;
             const isBlocked = event.status === "BLOCKED";
             const isPending = event.status === "PENDING";
-            const formattedTime = new Date(event.timestamp)
-              .toISOString()
-              .substring(11, 19);
+            let formattedTime = event.timestamp;
+            try {
+              formattedTime = new Date(event.timestamp).toISOString().substring(11, 19);
+            } catch {
+              // fallback
+            }
 
             return (
               <div
@@ -235,15 +234,24 @@ export default function LiveTelemetryStream({
                     <RiskScoreBar score={event.risk_score} />
                   </div>
 
-                  {/* Status Badge */}
+                  {/* Status Badge with Rule ID */}
                   <div className="col-span-2 sm:col-span-1 flex justify-end">
-                    <StatusBadge status={event.status} />
+                    <StatusBadge status={event.status} ruleId={event.rule_id} />
                   </div>
                 </div>
 
                 {/* Expanded Details View on Click */}
                 {isSelected && (
                   <div className="px-4 py-3 mx-4 mb-2.5 rounded-lg bg-neutral-950 border border-neutral-800 text-xs space-y-2 animate-feed-entry">
+                    {event.rule_id && (
+                      <div className="flex items-center gap-2 text-neutral-400">
+                        <span className="text-[10px] font-semibold uppercase">Rule ID:</span>
+                        <span className="px-2 py-0.5 rounded bg-neutral-900 border border-neutral-800 text-emerald-400 font-bold">
+                          {event.rule_id}
+                        </span>
+                      </div>
+                    )}
+
                     {event.diagnosis && (
                       <div className="flex items-start gap-2 text-red-300 bg-crimson/15 p-2 rounded-lg border border-crimson/40">
                         <AlertTriangle className="h-4 w-4 text-crimson flex-shrink-0 mt-0.5" />
@@ -255,6 +263,7 @@ export default function LiveTelemetryStream({
                         </div>
                       </div>
                     )}
+
                     <div>
                       <span className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider block mb-1">
                         Exact Tool Payload
