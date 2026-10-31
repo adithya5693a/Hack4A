@@ -1,0 +1,8 @@
+.next
+node_modules
+.git
+.vercel
+backend/.venv
+backend/__pycache__
+*.pyc
+tsconfig.tsbuildinfo
